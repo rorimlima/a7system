@@ -260,6 +260,14 @@ class AppController {
           this.navigate('/dashboard');
         }
         break;
+      case '/crm':
+        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('vendedor')) {
+          if (window.CrmPage) window.CrmPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
       default:
         contentArea.innerHTML = `<h2>404 - Página não encontrada</h2>`;
     }
@@ -274,31 +282,11 @@ class AppController {
   }
 
   renderDashboard() {
-    const html = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2 style="margin: 0;">Visão Geral</h2>
-        <span style="color: #6B7280; font-size: 0.9rem;">Atualizado agora</span>
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-        ${window.UI ? window.UI.createStatsCard('Vendas do Mês', 'R$ 84.530,00', '📈', '+15% em relação ao mês anterior') : ''}
-        ${window.UI ? window.UI.createStatsCard('Clientes Ativos', '312', '👥', '+5 novos clientes hoje') : ''}
-        ${window.UI ? window.UI.createStatsCard('Contas a Receber', 'R$ 22.400,00', '💰', 'Recebimentos previstos para hoje') : ''}
-        ${window.UI ? window.UI.createStatsCard('Contas a Pagar', 'R$ 5.200,00', '⚠️', 'Vencendo nos próximos 7 dias') : ''}
-      </div>
-      
-      <div class="card" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem;">
-        <div class="card-header" style="margin-bottom: 1rem;"><h3 class="card-title" style="margin: 0;">Últimas Movimentações</h3></div>
-        ${window.UI ? window.UI.createTable(
-          ['Data', 'Descrição', 'Valor', 'Status'],
-          [
-            { id: 1, data: ['16/09/2026', 'Venda #1042 - Cliente X', 'R$ 2.500,00', window.UI.createBadge('Concluído', 'success')] },
-            { id: 2, data: ['15/09/2026', 'Pagamento Fornecedor Y', 'R$ -1.200,00', window.UI.createBadge('Pago', 'info')] },
-            { id: 3, data: ['15/09/2026', 'Venda #1041 - Cliente Z', 'R$ 450,00', window.UI.createBadge('Pendente', 'warning')] }
-          ]
-        ) : ''}
-      </div>
-    `;
-    this.renderPage(html);
+    if (window.DashboardPage) {
+      window.DashboardPage.render();
+    } else {
+      this.renderPage('<h2>Dashboard temporariamente indisponível.</h2>');
+    }
   }
 
   // ==== Utils Globais UI ====

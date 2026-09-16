@@ -67,10 +67,12 @@ app.include_router(purchases_router, prefix="/api/purchases", tags=["Purchases"]
 app.include_router(parcelas_router, prefix="/api/parcelas", tags=["Contas a Pagar"])
 
 from sales.routes import router as sales_router
+from crm.routes import router as crm_router
+from dashboard.routes import router as dashboard_router
 
 app.include_router(sales_router, prefix="/api/sales", tags=["Sales"])
-# app.include_router(crm.router, prefix="/api/crm", tags=["CRM"])
-# app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
+app.include_router(crm_router, prefix="/api/crm", tags=["CRM"])
+app.include_router(dashboard_router, prefix="/api/dashboard", tags=["Dashboard"])
 
 if __name__ == "__main__":
     import uvicorn

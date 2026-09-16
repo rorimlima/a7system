@@ -1,309 +1,301 @@
+// frontend/public/js/landing.js
+
 /**
- * A7SYSTEM - Landing Page Scripts
- * Lógica para o catálogo público de produtos.
+ * Configuração Firebase e Lógica da Landing Page do A7SYSTEM.
+ * Este script utiliza o Firebase v9 Compat para facilitar a integração vanilla.
  */
 
-// NOTA: Certifique-se de substituir o firebaseConfig pelos dados reais do projeto se não usar hosting do Firebase automático.
-// Usaremos as variáveis globais injetadas, ou faremos init se houver.
+// Se o Firebase ainda não foi inicializado globalmente por outro script, configure-o aqui.
+// (Geralmente num ambiente real os dados estariam em config separado, mas por robustez inicializamos se necessário)
 const firebaseConfig = {
-    // Configurações do Firebase. Idealmente, injetadas pelo ambiente.
-    // Como é um catálogo público, chaves públicas são seguras aqui, 
-    // desde que regras de Firestore estejam protegendo dados sensíveis.
-    // EXCLUA ou SUBSTITUA com sua config real se necessário localmente.
+    // Substituir pelas chaves reais de prod
+    apiKey: "SUA_API_KEY",
+    authDomain: "a7system-prod.firebaseapp.com",
+    projectId: "a7system-prod",
+    storageBucket: "a7system-prod.appspot.com",
+    messagingSenderId: "SEU_SENDER_ID",
+    appId: "SEU_APP_ID"
 };
 
-// Inicialização do Firebase (caso não tenha sido inicializado)
-if (!firebase.apps.length && Object.keys(firebaseConfig).length > 0) {
+if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-
 const db = firebase.firestore();
 
-// Estado Global
-let currentProducts = [];
-let lastDoc = null;
-const ITEMS_PER_PAGE = 12;
-let isLoading = false;
-let currentFilters = {
-    companyId: '',
-    search: '',
-    sort: 'name'
-};
-let companiesMap = {};
+// Variáveis Globais de Estado
+let empresasData = [];
+let allProdutos = [];
+let displayedProdutos = [];
+const PAGE_SIZE = 12;
+let currentOffset = 0;
 
-// Elementos DOM
-const elements = {
-    productsGrid: document.getElementById('products-grid'),
-    companySelect: document.getElementById('company-select'),
-    sortSelect: document.getElementById('sort-select'),
-    searchInput: document.getElementById('search-input'),
-    loadMoreBtn: document.getElementById('load-more-btn'),
-    loadingSpinner: document.getElementById('loading-landing'),
-    emptyState: document.getElementById('empty-state-landing'),
-    modal: document.getElementById('product-modal'),
-    closeModal: document.getElementById('close-modal'),
-    modalOverlay: document.querySelector('.modal-overlay'),
-    currentYear: document.getElementById('current-year')
+// Elementos da UI
+const els = {
+    empresasGrid: document.getElementById('empresasGrid'),
+    produtosGrid: document.getElementById('produtosGrid'),
+    empresaFilter: document.getElementById('empresaFilter'),
+    priceFilter: document.getElementById('priceFilter'),
+    searchInput: document.getElementById('searchInput'),
+    btnSearch: document.getElementById('btnSearch'),
+    btnLoadMore: document.getElementById('btnLoadMore'),
+    
+    // Modal
+    modal: document.getElementById('productModal'),
+    btnCloseModal: document.getElementById('btnCloseModal'),
+    modalMainImage: document.getElementById('modalMainImage'),
+    modalEmpresa: document.getElementById('modalEmpresa'),
+    modalName: document.getElementById('modalName'),
+    modalCode: document.getElementById('modalCode'),
+    modalDesc: document.getElementById('modalDesc'),
+    modalPrice: document.getElementById('modalPrice'),
+    modalStatus: document.getElementById('modalStatus'),
+    btnContactWpp: document.getElementById('btnContactWpp')
 };
 
-// Inicialização
+/**
+ * Inicialização
+ */
 document.addEventListener('DOMContentLoaded', async () => {
-    elements.currentYear.textContent = new Date().getFullYear();
-    setupEventListeners();
-    await loadVisibleCompanies();
-    await fetchProducts(true);
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    
+    // Skeleton loading
+    renderSkeletons();
+
+    try {
+        await loadEmpresas();
+        await loadProdutos();
+        setupEventListeners();
+    } catch (error) {
+        console.error("Erro ao carregar dados da landing page:", error);
+        els.produtosGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--color-primary);">Erro ao carregar o catálogo. Tente novamente mais tarde.</p>`;
+        els.empresasGrid.innerHTML = '';
+    }
 });
 
 /**
- * Configura os listeners de eventos.
+ * Renderiza skeletons durante o carregamento
  */
-function setupEventListeners() {
-    let debounceTimer;
-    elements.searchInput.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            currentFilters.search = e.target.value.trim().toLowerCase();
-            fetchProducts(true);
-        }, 300);
-    });
-
-    elements.companySelect.addEventListener('change', (e) => {
-        currentFilters.companyId = e.target.value;
-        fetchProducts(true);
-    });
-
-    elements.sortSelect.addEventListener('change', (e) => {
-        currentFilters.sort = e.target.value;
-        // Ordenação client-side ou recarregar
-        sortAndRenderCurrent();
-    });
-
-    elements.loadMoreBtn.addEventListener('click', () => {
-        fetchProducts(false);
-    });
-
-    elements.closeModal.addEventListener('click', closeProductModal);
-    elements.modalOverlay.addEventListener('click', closeProductModal);
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !elements.modal.classList.contains('hidden')) {
-            closeProductModal();
-        }
-    });
-}
-
-/**
- * Carrega as empresas visíveis na landing page e popula o select.
- */
-async function loadVisibleCompanies() {
-    try {
-        // Query de empresas ativas e visíveis na landing page
-        const snap = await db.collection('empresas')
-            .where('ativa', '==', true)
-            .where('visivelNaLanding', '==', true)
-            .get();
-
-        const select = elements.companySelect;
-        
-        snap.forEach(doc => {
-            const data = doc.data();
-            companiesMap[doc.id] = data.nomeFantasia || data.razaoSocial;
-            const option = document.createElement('option');
-            option.value = doc.id;
-            option.textContent = companiesMap[doc.id];
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error("Erro ao carregar empresas:", error);
+function renderSkeletons() {
+    let skeletons = '';
+    for(let i=0; i<4; i++) {
+        skeletons += `<div class="skeleton skeleton-card"></div>`;
     }
+    els.empresasGrid.innerHTML = skeletons;
+    els.produtosGrid.innerHTML = skeletons;
 }
 
 /**
- * Busca produtos do Firestore baseados nos filtros.
- * @param {boolean} reset - Se true, limpa o grid e recomeça a paginação.
+ * Carrega empresas visíveis
  */
-async function fetchProducts(reset = false) {
-    if (isLoading) return;
-    isLoading = true;
+async function loadEmpresas() {
+    const snap = await db.collection('empresas')
+        .where('ativa', '==', true)
+        .where('visivelNaLanding', '==', true)
+        .get();
 
-    if (reset) {
-        elements.productsGrid.innerHTML = '';
-        currentProducts = [];
-        lastDoc = null;
-        elements.loadMoreBtn.classList.add('hidden');
-        showLoading(true);
-        showEmptyState(false);
+    empresasData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Preenche Grid de Empresas
+    if (empresasData.length === 0) {
+        els.empresasGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Nenhuma empresa parceira disponível no momento.</p>';
+    } else {
+        els.empresasGrid.innerHTML = empresasData.map(emp => `
+            <div class="empresa-card" onclick="filterByEmpresa('${emp.id}')">
+                <h3>${emp.nomeFantasia || emp.razaoSocial}</h3>
+                <p>${emp.descricao || 'Conheça nossos produtos'}</p>
+            </div>
+        `).join('');
     }
 
-    try {
-        let query = db.collection('produtos')
-            .where('quantidadeAtual', '>', 0);
-            
-        if (currentFilters.companyId) {
-            query = query.where('empresaId', '==', currentFilters.companyId);
-        }
-
-        // Observação: Filtros complexos (busca textual + ordenação em campos diferentes)
-        // podem requerer índices compostos no Firestore.
-        // Faremos a filtragem por busca text (search) em client-side após a query,
-        // limitando o fetch por página se não houver busca textual intensa,
-        // ou você pode implementar algolia/typesense se for grande escala.
-        
-        query = query.limit(ITEMS_PER_PAGE);
-
-        if (lastDoc && !reset) {
-            query = query.startAfter(lastDoc);
-        }
-
-        const snapshot = await query.get();
-        
-        if (!snapshot.empty) {
-            lastDoc = snapshot.docs[snapshot.docs.length - 1];
-            
-            const newProducts = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            // Filtro de busca textual client-side simples
-            let filteredProducts = newProducts;
-            if (currentFilters.search) {
-                const s = currentFilters.search;
-                filteredProducts = filteredProducts.filter(p => 
-                    p.nome?.toLowerCase().includes(s) || 
-                    p.descricao?.toLowerCase().includes(s)
-                );
-            }
-
-            currentProducts = reset ? filteredProducts : [...currentProducts, ...filteredProducts];
-            
-            sortAndRenderCurrent();
-
-            if (snapshot.docs.length === ITEMS_PER_PAGE) {
-                elements.loadMoreBtn.classList.remove('hidden');
-            } else {
-                elements.loadMoreBtn.classList.add('hidden');
-            }
-        } else if (reset) {
-            showEmptyState(true);
-        }
-
-    } catch (error) {
-        console.error("Erro ao buscar produtos:", error);
-        // Fallback gracefully
-        if (reset) showEmptyState(true);
-    } finally {
-        isLoading = false;
-        showLoading(false);
-    }
-}
-
-/**
- * Ordena a lista atual e re-renderiza o grid.
- */
-function sortAndRenderCurrent() {
-    const sortVal = currentFilters.sort;
-    let sorted = [...currentProducts];
-
-    sorted.sort((a, b) => {
-        if (sortVal === 'name') return (a.nome || '').localeCompare(b.nome || '');
-        if (sortVal === 'price_asc') return (a.precoVenda || 0) - (b.precoVenda || 0);
-        if (sortVal === 'price_desc') return (b.precoVenda || 0) - (a.precoVenda || 0);
-        if (sortVal === 'recent') return (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0);
-        return 0;
+    // Preenche Filtro Select
+    empresasData.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.id;
+        option.textContent = emp.nomeFantasia || emp.razaoSocial;
+        els.empresaFilter.appendChild(option);
     });
-
-    renderProductsGrid(sorted);
 }
 
 /**
- * Renderiza os cards de produtos no grid.
- * @param {Array} products 
+ * Carrega produtos das empresas ativas (que têm qtd > 0 ou apenas ativas)
  */
-function renderProductsGrid(products) {
-    elements.productsGrid.innerHTML = '';
-    
-    if (products.length === 0) {
-        showEmptyState(true);
+async function loadProdutos() {
+    if (empresasData.length === 0) {
+        els.produtosGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Nenhum produto disponível.</p>';
         return;
     }
+
+    const empresasIds = empresasData.map(e => e.id);
     
-    showEmptyState(false);
+    // Firestore limita 'in' a 10 valores. Se houver mais, seria necessário chunking,
+    // mas para simplificar na versão inicial, fazemos até 10 ou buscamos todos e filtramos client-side.
+    // Como é landing page, o ideal é ter uma collection separada ou backend para otimização se o volume for alto.
+    // Vamos buscar produtos e filtrar no client-side para não bater no limite de 'in' do Firestore
     
-    products.forEach(prod => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.onclick = () => openProductModal(prod);
+    const snap = await db.collection('produtos')
+        .where('ativo', '==', true)
+        .get();
+
+    allProdutos = snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(prod => empresasIds.includes(prod.empresaId)); // Client-side filter
+
+    applyFilters();
+}
+
+/**
+ * Filtra produtos a partir da empresa clicada nos cards
+ */
+window.filterByEmpresa = function(empresaId) {
+    els.empresaFilter.value = empresaId;
+    applyFilters();
+    document.getElementById('produtos').scrollIntoView({ behavior: 'smooth' });
+};
+
+/**
+ * Aplica os filtros (Pesquisa, Empresa, Preço)
+ */
+function applyFilters() {
+    const searchVal = els.searchInput.value.toLowerCase();
+    const empresaId = els.empresaFilter.value;
+    const priceVal = els.priceFilter.value;
+
+    displayedProdutos = allProdutos.filter(prod => {
+        // Filtro de Texto
+        const matchesSearch = (prod.nome && prod.nome.toLowerCase().includes(searchVal)) || 
+                              (prod.codigo && prod.codigo.toLowerCase().includes(searchVal));
+        if (!matchesSearch) return false;
+
+        // Filtro de Empresa
+        if (empresaId && prod.empresaId !== empresaId) return false;
+
+        // Filtro de Preço
+        if (priceVal && prod.precoVenda != null) {
+            const p = parseFloat(prod.precoVenda);
+            if (priceVal === '0-50' && p > 50) return false;
+            if (priceVal === '50-100' && (p <= 50 || p > 100)) return false;
+            if (priceVal === '100-500' && (p <= 100 || p > 500)) return false;
+            if (priceVal === '500+' && p <= 500) return false;
+        }
+
+        return true;
+    });
+
+    currentOffset = 0;
+    els.produtosGrid.innerHTML = '';
+    renderProdutosPage();
+}
+
+/**
+ * Renderiza página de produtos e controle do botão Carregar Mais
+ */
+function renderProdutosPage() {
+    if (displayedProdutos.length === 0) {
+        els.produtosGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Nenhum produto encontrado com os filtros atuais.</p>';
+        els.btnLoadMore.style.display = 'none';
+        return;
+    }
+
+    const nextBatch = displayedProdutos.slice(currentOffset, currentOffset + PAGE_SIZE);
+    
+    const html = nextBatch.map(prod => {
+        const empresa = empresasData.find(e => e.id === prod.empresaId);
+        const empNome = empresa ? (empresa.nomeFantasia || empresa.razaoSocial) : 'Empresa Indefinida';
+        const imgUrl = (prod.imagens && prod.imagens.length > 0) ? prod.imagens[0] : 'https://via.placeholder.com/300x200?text=Sem+Foto';
+        const precoFormatado = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(prod.precoVenda || 0);
+        const hasStock = (prod.quantidadeAtual || 0) > 0;
         
-        const imgUrl = getProductImageUrl(prod.fotoUrl);
-        const companyName = companiesMap[prod.empresaId] || 'Parceiro A7SYSTEM';
-        const price = formatPrice(prod.precoVenda || 0);
-        
-        card.innerHTML = `
-            <img src="${imgUrl}" alt="${prod.nome || 'Produto'}" class="card-image" loading="lazy" onerror="this.src='https://via.placeholder.com/400x300?text=Sem+Imagem'">
-            <div class="card-content">
-                <span class="badge">${companyName}</span>
-                <h3 class="card-title">${prod.nome || 'Sem nome'}</h3>
-                <p class="card-desc">${prod.descricao || 'Sem descrição'}</p>
-                <div class="card-price-container">
-                    <span class="price">${price}</span>
+        return `
+            <div class="produto-card">
+                <img src="${imgUrl}" alt="${prod.nome}" class="produto-img" loading="lazy">
+                <div class="produto-info">
+                    <span class="produto-empresa">${empNome}</span>
+                    <h3>${prod.nome}</h3>
+                    <p style="font-size: 0.8rem; color: var(--color-text-light); margin-bottom: 0.5rem;">Cód: ${prod.codigo || 'N/A'}</p>
+                    <span class="produto-preco">${precoFormatado}</span>
+                    <div>
+                        <span class="produto-status ${hasStock ? 'status-disponivel' : 'status-indisponivel'}">
+                            ${hasStock ? 'Disponível' : 'Indisponível'}
+                        </span>
+                    </div>
+                    <button class="btn-detalhes" onclick="openProductModal('${prod.id}')">Ver Detalhes</button>
                 </div>
             </div>
         `;
-        
-        elements.productsGrid.appendChild(card);
+    }).join('');
+
+    els.produtosGrid.innerHTML += html;
+    currentOffset += PAGE_SIZE;
+
+    if (currentOffset >= displayedProdutos.length) {
+        els.btnLoadMore.style.display = 'none';
+    } else {
+        els.btnLoadMore.style.display = 'inline-block';
+    }
+}
+
+/**
+ * Event Listeners
+ */
+function setupEventListeners() {
+    els.btnSearch.addEventListener('click', applyFilters);
+    els.searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') applyFilters();
+    });
+    
+    els.empresaFilter.addEventListener('change', applyFilters);
+    els.priceFilter.addEventListener('change', applyFilters);
+    
+    els.btnLoadMore.addEventListener('click', renderProdutosPage);
+    
+    // Modal fechar
+    els.btnCloseModal.addEventListener('click', closeModal);
+    els.modal.addEventListener('click', (e) => {
+        if (e.target === els.modal) closeModal();
     });
 }
 
 /**
- * Abre o modal de produto.
- * @param {Object} product 
+ * Lógica do Modal
  */
-function openProductModal(product) {
-    document.getElementById('modal-main-img').src = getProductImageUrl(product.fotoUrl);
-    document.getElementById('modal-company-badge').textContent = companiesMap[product.empresaId] || 'Parceiro';
-    document.getElementById('modal-title').textContent = product.nome || 'Sem nome';
-    document.getElementById('modal-code').textContent = `Código: ${product.codigo || 'N/A'}`;
-    document.getElementById('modal-price').textContent = formatPrice(product.precoVenda || 0);
-    document.getElementById('modal-desc').textContent = product.descricao || 'Nenhuma descrição disponível.';
+window.openProductModal = function(produtoId) {
+    const prod = allProdutos.find(p => p.id === produtoId);
+    if (!prod) return;
+
+    const empresa = empresasData.find(e => e.id === prod.empresaId);
+    const empNome = empresa ? (empresa.nomeFantasia || empresa.razaoSocial) : 'Empresa Indefinida';
+    const hasStock = (prod.quantidadeAtual || 0) > 0;
+    const precoFormatado = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(prod.precoVenda || 0);
+
+    els.modalEmpresa.textContent = empNome;
+    els.modalName.textContent = prod.nome;
+    els.modalCode.textContent = prod.codigo || 'N/A';
+    els.modalDesc.textContent = prod.descricao || 'Sem descrição detalhada.';
+    els.modalPrice.textContent = precoFormatado;
     
-    elements.modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // block scroll
-}
+    els.modalStatus.textContent = hasStock ? 'Disponível' : 'Indisponível';
+    els.modalStatus.className = `modal-status ${hasStock ? 'status-disponivel' : 'status-indisponivel'}`;
 
-/**
- * Fecha o modal de produto.
- */
-function closeProductModal() {
-    elements.modal.classList.add('hidden');
+    // Imagem principal
+    const imgUrl = (prod.imagens && prod.imagens.length > 0) ? prod.imagens[0] : 'https://via.placeholder.com/600x400?text=Sem+Foto';
+    els.modalMainImage.innerHTML = `<img src="${imgUrl}" alt="${prod.nome}">`;
+
+    // Botão WhatsApp
+    if (empresa && empresa.telefone) {
+        const textMsg = encodeURIComponent(`Olá! Vi o produto ${prod.nome} (Cód: ${prod.codigo || 'N/A'}) no catálogo digital e gostaria de mais informações.`);
+        let fone = empresa.telefone.replace(/\D/g, ''); // limpa não números
+        if (!fone.startsWith('55')) fone = '55' + fone;
+        els.btnContactWpp.href = `https://wa.me/${fone}?text=${textMsg}`;
+        els.btnContactWpp.style.display = 'inline-block';
+    } else {
+        els.btnContactWpp.style.display = 'none';
+    }
+
+    els.modal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // impede scroll de fundo
+};
+
+window.closeModal = function() {
+    els.modal.classList.remove('active');
     document.body.style.overflow = '';
-}
-
-/**
- * Helper: Formata valor para R$ X.XXX,XX
- */
-function formatPrice(value) {
-    return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-/**
- * Helper: Retorna URL de imagem ou placeholder
- */
-function getProductImageUrl(url) {
-    return url ? url : 'https://via.placeholder.com/600x400?text=Sem+Imagem';
-}
-
-function showLoading(show) {
-    if (show) {
-        elements.loadingSpinner.classList.remove('hidden');
-    } else {
-        elements.loadingSpinner.classList.add('hidden');
-    }
-}
-
-function showEmptyState(show) {
-    if (show) {
-        elements.emptyState.classList.remove('hidden');
-    } else {
-        elements.emptyState.classList.add('hidden');
-    }
-}
+};
