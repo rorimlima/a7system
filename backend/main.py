@@ -53,6 +53,7 @@ from companies.routes import router as companies_router
 from companies.fornecedores_routes import router as fornecedores_router
 from companies.clientes_routes import router as clientes_router
 from products.routes import router as products_router
+from products.estoque_routes import router as estoque_router
 from purchases.routes import router as purchases_router
 from purchases.parcelas_routes import router as parcelas_router
 
@@ -61,10 +62,13 @@ app.include_router(companies_router, prefix="/api/companies", tags=["Companies"]
 app.include_router(fornecedores_router, prefix="/api/fornecedores", tags=["Fornecedores"])
 app.include_router(clientes_router, prefix="/api/clientes", tags=["Clientes"])
 app.include_router(products_router, prefix="/api/products", tags=["Products"])
+app.include_router(estoque_router, prefix="/api/estoque", tags=["Estoque"])
 app.include_router(purchases_router, prefix="/api/purchases", tags=["Purchases"])
 app.include_router(parcelas_router, prefix="/api/parcelas", tags=["Contas a Pagar"])
 
-# app.include_router(sales.router, prefix="/api/sales", tags=["Sales"])
+from sales.routes import router as sales_router
+
+app.include_router(sales_router, prefix="/api/sales", tags=["Sales"])
 # app.include_router(crm.router, prefix="/api/crm", tags=["CRM"])
 # app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 

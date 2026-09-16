@@ -204,6 +204,30 @@ class AppController {
       case '/produtos':
         if (window.ProdutosPage) window.ProdutosPage.render();
         break;
+      case '/estoque':
+        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
+          if (window.EstoquePage) window.EstoquePage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
+      case '/saidas':
+        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
+          if (window.SaidasPage) window.SaidasPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
+      case '/devolucoes':
+        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
+          if (window.DevolucoesPage) window.DevolucoesPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
       case '/compras':
         if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
           if (window.ComprasPage) window.ComprasPage.render();
@@ -221,8 +245,20 @@ class AppController {
         }
         break;
       case '/vendas':
-        // Exemplo genérico de página sendo montada
-        contentArea.innerHTML = window.UI.createCard(`Página: ${path.substring(1).toUpperCase()}`, `<p>Módulo em desenvolvimento.</p>`);
+        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('vendedor')) {
+          if (window.VendasPage) window.VendasPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
+      case '/recebimentos':
+        if (this.hasRole('master') || this.hasRole('adm')) {
+          if (window.RecebimentosPage) window.RecebimentosPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
         break;
       default:
         contentArea.innerHTML = `<h2>404 - Página não encontrada</h2>`;
