@@ -148,7 +148,7 @@ const UsuariosPage = {
 
   openNewUserModal: () => {
     const html = `
-      <div style="padding: 1.5rem; width: 100%; min-width: 400px; max-width: 500px; box-sizing: border-box;">
+      <div style="padding: 1.5rem; width: 100%; max-width: 500px; box-sizing: border-box;">
         <h3 style="margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid #E5E7EB; padding-bottom: 0.5rem; color: #111827;">Cadastrar Novo Usuário</h3>
         <form id="form-novo-usuario">
           <div class="form-group" style="margin-bottom: 1rem;">
@@ -281,7 +281,7 @@ const UsuariosPage = {
     if (!u) return;
 
     const html = `
-      <div style="padding: 1.5rem; width: 100%; min-width: 400px; max-width: 500px; box-sizing: border-box;">
+      <div style="padding: 1.5rem; width: 100%; max-width: 500px; box-sizing: border-box;">
         <h3 style="margin-top: 0; margin-bottom: 1.5rem; border-bottom: 1px solid #E5E7EB; padding-bottom: 0.5rem; color: #111827;">Editar Usuário</h3>
         <form id="form-edit-usuario">
           <div class="form-group" style="margin-bottom: 1rem;">

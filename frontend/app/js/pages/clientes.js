@@ -10,8 +10,8 @@ window.ClientesPage = (function() {
 
   function render() {
     let html = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2>Gestão de Clientes</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+        <h2 style="margin: 0;">Gestão de Clientes</h2>
         <button class="btn btn-primary" id="btn-novo-cli">Novo Cliente</button>
       </div>
 
@@ -94,34 +94,34 @@ window.ClientesPage = (function() {
         <form id="form-cli">
           <input type="hidden" id="c-id" value="${isEdit ? cli.id : ''}">
           
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 1rem; margin-bottom: 1rem;">
             <div>
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Nome *</label>
-              <input type="text" id="c-nome" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" required value="${isEdit ? cli.nome : ''}">
+              <input type="text" id="c-nome" class="form-control" style="width: 100%;" required value="${isEdit ? cli.nome : ''}">
             </div>
             <div>
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">CPF / CNPJ *</label>
-              <input type="text" id="c-cpfcnpj" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" required value="${isEdit ? cli.cpfCnpj : ''}">
+              <input type="text" id="c-cpfcnpj" class="form-control" style="width: 100%;" required value="${isEdit ? cli.cpfCnpj : ''}">
             </div>
           </div>
 
           <div style="margin-bottom: 1rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Endereço Completo *</label>
-            <input type="text" id="c-endereco" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" required value="${isEdit ? cli.enderecoCompleto : ''}">
+            <input type="text" id="c-endereco" class="form-control" style="width: 100%;" required value="${isEdit ? cli.enderecoCompleto : ''}">
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); gap: 1rem; margin-bottom: 1rem;">
             <div>
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Cidade</label>
-              <input type="text" id="c-cidade" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" value="${isEdit ? cli.cidade : ''}">
+              <input type="text" id="c-cidade" class="form-control" style="width: 100%;" value="${isEdit ? cli.cidade : ''}">
             </div>
             <div>
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Bairro</label>
-              <input type="text" id="c-bairro" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" value="${isEdit ? cli.bairro : ''}">
+              <input type="text" id="c-bairro" class="form-control" style="width: 100%;" value="${isEdit ? cli.bairro : ''}">
             </div>
             <div>
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Região</label>
-              <input type="text" id="c-regiao" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" value="${isEdit ? cli.regiao : ''}">
+              <input type="text" id="c-regiao" class="form-control" style="width: 100%;" value="${isEdit ? cli.regiao : ''}">
             </div>
           </div>
 

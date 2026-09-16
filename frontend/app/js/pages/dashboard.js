@@ -8,10 +8,10 @@ const DashboardPage = {
       <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2 style="margin: 0; color: #111827;">Dashboard Financeiro</h2>
         
-        <div class="dashboard-filters" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <input type="date" id="dash-data-inicial" class="form-control" style="width: auto;">
-          <span style="align-self: center;">até</span>
-          <input type="date" id="dash-data-final" class="form-control" style="width: auto;">
+        <div class="dashboard-filters" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; width: auto; max-width: 100%;">
+          <input type="date" id="dash-data-inicial" class="form-control" style="width: auto; min-width: 130px; flex: 1;">
+          <span style="align-self: center; font-size: 0.875rem;">até</span>
+          <input type="date" id="dash-data-final" class="form-control" style="width: auto; min-width: 130px; flex: 1;">
           <button id="btn-dash-filtrar" class="btn btn-primary" style="background-color: #DC2626; border-color: #DC2626; color: white;">Filtrar</button>
           <button id="btn-dash-exportar" class="btn btn-secondary" style="background-color: #111827; border-color: #111827; color: white;">Exportar PDF</button>
         </div>
@@ -25,7 +25,7 @@ const DashboardPage = {
 
       <div id="dash-content">
         <!-- Linha 1: KPIs Principais -->
-        <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
           <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; border-left: 4px solid #10B981; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
             <div style="color: #6B7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Vendas do Período</div>
             <div id="kpi-vendas" style="font-size: 1.5rem; font-weight: bold; color: #10B981;">R$ 0,00</div>
@@ -50,7 +50,7 @@ const DashboardPage = {
         </div>
 
         <!-- Linha 2: KPIs Secundários -->
-        <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 1rem; margin-bottom: 2rem;">
           <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
             <div style="color: #6B7280; font-size: 0.9rem; margin-bottom: 0.5rem;">Contas em Aberto</div>
             <div id="kpi-contas-aberto" style="font-size: 1.25rem; font-weight: 500;">R$ 0,00</div>
@@ -68,23 +68,23 @@ const DashboardPage = {
         </div>
 
         <!-- Linha 3 e 4: Gráficos -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
           
           <!-- Vendas Diárias -->
-          <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-width: 0; overflow-x: hidden;">
             <h3 style="margin-top: 0; color: #111827; font-size: 1.1rem; margin-bottom: 1rem;">Vendas Diárias</h3>
-            <div class="chart-container" style="height: 200px; display: flex; align-items: flex-end; gap: 4px; padding-bottom: 20px; position: relative; border-bottom: 1px solid #E5E7EB;">
-              <div id="chart-vendas-diarias" style="display: flex; width: 100%; height: 100%; align-items: flex-end; gap: 4px; justify-content: space-around;">
+            <div class="chart-container" style="height: 200px; display: flex; align-items: flex-end; gap: 4px; padding-bottom: 20px; position: relative; border-bottom: 1px solid #E5E7EB; overflow-x: auto; -webkit-overflow-scrolling: touch; min-width: 0;">
+              <div id="chart-vendas-diarias" style="display: flex; width: 100%; height: 100%; align-items: flex-end; gap: 4px; justify-content: space-around; min-width: 260px;">
                 <!-- Barras injetadas via JS -->
               </div>
             </div>
           </div>
           
           <!-- Fluxo de Caixa -->
-          <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-width: 0; overflow-x: hidden;">
             <h3 style="margin-top: 0; color: #111827; font-size: 1.1rem; margin-bottom: 1rem;">Fluxo de Caixa (Últimos 6 meses)</h3>
-            <div class="chart-container" style="height: 200px; display: flex; align-items: flex-end; padding-bottom: 20px; position: relative; border-bottom: 1px solid #E5E7EB;">
-              <div id="chart-fluxo-caixa" style="display: flex; width: 100%; height: 100%; align-items: flex-end; justify-content: space-around;">
+            <div class="chart-container" style="height: 200px; display: flex; align-items: flex-end; padding-bottom: 20px; position: relative; border-bottom: 1px solid #E5E7EB; overflow-x: auto; -webkit-overflow-scrolling: touch; min-width: 0;">
+              <div id="chart-fluxo-caixa" style="display: flex; width: 100%; height: 100%; align-items: flex-end; justify-content: space-around; min-width: 260px;">
                 <!-- Barras duplas injetadas via JS -->
               </div>
             </div>
@@ -170,10 +170,10 @@ const DashboardPage = {
     const formatBRL = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
     
     document.getElementById('kpi-vendas').innerText = formatBRL(kpis.total_vendas);
-    document.getElementById('kpi-qtd-vendas').innerText = \`\${kpis.qtd_vendas} vendas\`;
+    document.getElementById('kpi-qtd-vendas').innerText = `${kpis.qtd_vendas} vendas`;
     
     document.getElementById('kpi-compras').innerText = formatBRL(kpis.total_compras);
-    document.getElementById('kpi-qtd-compras').innerText = \`\${kpis.qtd_compras} compras\`;
+    document.getElementById('kpi-qtd-compras').innerText = `${kpis.qtd_compras} compras`;
     
     const saldoEl = document.getElementById('kpi-saldo');
     saldoEl.innerText = formatBRL(kpis.saldo);
@@ -198,7 +198,7 @@ const DashboardPage = {
     }
 
     const estoqueEl = document.getElementById('kpi-estoque-critico');
-    estoqueEl.innerText = \`\${kpis.produtos_estoque_critico} produtos\`;
+    estoqueEl.innerText = `${kpis.produtos_estoque_critico} produtos`;
     if (kpis.produtos_estoque_critico > 0) {
       estoqueEl.style.color = '#DC2626';
       document.getElementById('card-estoque-critico').style.borderLeftColor = '#DC2626';
@@ -226,10 +226,10 @@ const DashboardPage = {
       
       const barWrapper = document.createElement('div');
       barWrapper.style.cssText = 'display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; flex: 1; min-width: 15px; max-width: 40px; group; position: relative;';
-      barWrapper.title = \`Dia \${dia}: \${formatado}\`;
+      barWrapper.title = `Dia ${dia}: ${formatado}`;
       
       const bar = document.createElement('div');
-      bar.style.cssText = \`width: 80%; background-color: #DC2626; border-radius: 4px 4px 0 0; height: \${heightPercent}%; transition: height 0.5s ease; min-height: 2px;\`;
+      bar.style.cssText = `width: 80%; background-color: #DC2626; border-radius: 4px 4px 0 0; height: ${heightPercent}%; transition: height 0.5s ease; min-height: 2px;`;
       bar.addEventListener('mouseover', (e) => e.target.style.opacity = '0.8');
       bar.addEventListener('mouseout', (e) => e.target.style.opacity = '1');
       
@@ -274,17 +274,17 @@ const DashboardPage = {
       barsContainer.style.cssText = 'display: flex; align-items: flex-end; gap: 2px; height: 100%; width: 60%; justify-content: center;';
       
       const barEntrada = document.createElement('div');
-      barEntrada.style.cssText = \`width: 50%; background-color: #10B981; border-radius: 4px 4px 0 0; height: \${entradaH}%; min-height: 2px;\`;
-      barEntrada.title = \`Entradas: \${formatE}\`;
+      barEntrada.style.cssText = `width: 50%; background-color: #10B981; border-radius: 4px 4px 0 0; height: ${entradaH}%; min-height: 2px;`;
+      barEntrada.title = `Entradas: ${formatE}`;
       
       const barSaida = document.createElement('div');
-      barSaida.style.cssText = \`width: 50%; background-color: #DC2626; border-radius: 4px 4px 0 0; height: \${saidaH}%; min-height: 2px;\`;
-      barSaida.title = \`Saídas: \${formatS}\`;
+      barSaida.style.cssText = `width: 50%; background-color: #DC2626; border-radius: 4px 4px 0 0; height: ${saidaH}%; min-height: 2px;`;
+      barSaida.title = `Saídas: ${formatS}`;
       
       const label = document.createElement('div');
       label.style.cssText = 'font-size: 0.75rem; color: #6B7280; margin-top: 4px; text-align: center; position: absolute; bottom: -20px;';
       const [ano, mes] = m.split('-');
-      label.innerText = \`\${mes}/\${ano.substring(2)}\`;
+      label.innerText = `${mes}/${ano.substring(2)}`;
       
       barsContainer.appendChild(barEntrada);
       barsContainer.appendChild(barSaida);
@@ -312,17 +312,17 @@ const DashboardPage = {
       const tr = document.createElement('tr');
       tr.style.borderBottom = '1px solid #E5E7EB';
       
-      tr.innerHTML = \`
-        <td style="padding: 0.75rem;">\${index + 1}º</td>
-        <td style="padding: 0.75rem; font-weight: 500;">\${prod.nome}</td>
-        <td style="padding: 0.75rem; text-align: center;">\${prod.qtd}</td>
-        <td style="padding: 0.75rem; text-align: right;">\${formatado}</td>
+      tr.innerHTML = `
+        <td style="padding: 0.75rem;">${index + 1}º</td>
+        <td style="padding: 0.75rem; font-weight: 500;">${prod.nome}</td>
+        <td style="padding: 0.75rem; text-align: center;">${prod.qtd}</td>
+        <td style="padding: 0.75rem; text-align: right;">${formatado}</td>
         <td style="padding: 0.75rem; vertical-align: middle;">
           <div style="width: 100%; background: #F3F4F6; border-radius: 99px; height: 8px; overflow: hidden;">
-            <div style="width: \${widthPercent}%; background: #DC2626; height: 100%; border-radius: 99px;"></div>
+            <div style="width: ${widthPercent}%; background: #DC2626; height: 100%; border-radius: 99px;"></div>
           </div>
         </td>
-      \`;
+      `;
       tbody.appendChild(tr);
     });
   },
@@ -332,9 +332,9 @@ const DashboardPage = {
     const dataFinal = document.getElementById('dash-data-final').value;
     const empresaId = window.appController.empresaAtiva;
     
-    let url = \`/dashboard/export-pdf?empresaId=\${empresaId}\`;
-    if (dataInicial) url += \`&dataInicial=\${dataInicial}\`;
-    if (dataFinal) url += \`&dataFinal=\${dataFinal}\`;
+    let url = `/dashboard/export-pdf?empresaId=${empresaId}`;
+    if (dataInicial) url += `&dataInicial=${dataInicial}`;
+    if (dataFinal) url += `&dataFinal=${dataFinal}`;
 
     window.appController.showToast('Gerando PDF...', 'info');
     

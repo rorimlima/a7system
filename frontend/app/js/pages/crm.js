@@ -9,16 +9,16 @@ class CrmPage {
 
   async render() {
     this.container.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2 style="margin: 0;">Dashboard CRM</h2>
         <button id="btn-refresh-crm" class="btn btn-outline">🔄 Atualizar Dados</button>
       </div>
 
-      <div id="crm-metrics-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+      <div id="crm-metrics-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 1rem; margin-bottom: 2rem;">
         <!-- Métricas via JS -->
       </div>
 
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
         <div class="card" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem;">
           <h3 style="margin-top: 0; margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem;">🏆 Top Clientes</h3>
           <div id="crm-ranking-container">Carregando ranking...</div>
@@ -180,7 +180,7 @@ class CrmPage {
       const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString('pt-BR') : 'N/A';
 
       const modalHtml = `
-        <div style="min-width: 600px;">
+        <div style="width: 100%; max-width: 600px; box-sizing: border-box;">
           <h2 style="margin-top: 0;">Histórico do Cliente</h2>
           
           <div style="background: #f9fafb; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
@@ -191,7 +191,7 @@ class CrmPage {
             </p>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
             <div style="background: #eff6ff; padding: 1rem; border-radius: 8px; text-align: center;">
               <div style="font-size: 0.8rem; color: #1d4ed8; font-weight: bold;">TOTAL GASTO</div>
               <div style="font-size: 1.2rem; font-weight: bold; margin-top: 0.5rem;">${formatCurrency(data.resumo.totalGasto)}</div>

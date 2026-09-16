@@ -168,7 +168,7 @@ window.ProdutosPage = (function() {
             <input type="text" id="p-codigo" readonly class="form-control" style="width: 100%; padding: 8px; background: transparent; border: none; font-family: monospace; font-size: 1.1em;" value="${sysCode}">
           </div>
 
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 1rem; margin-bottom: 1rem;">
             <div>
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Descrição *</label>
               <input type="text" id="p-desc" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" required value="${isEdit ? prod.descricao : ''}">
@@ -179,7 +179,7 @@ window.ProdutosPage = (function() {
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 1rem; margin-bottom: 1rem;">
             <div>
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">NCM</label>
               <input type="text" id="p-ncm" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" value="${isEdit ? prod.ncm : ''}">
@@ -194,7 +194,7 @@ window.ProdutosPage = (function() {
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr)); gap: 1rem; margin-bottom: 1rem;">
             <div>
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Qtd Atual</label>
               <input type="number" id="p-qtd" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" value="${isEdit ? prod.quantidade : 0}">

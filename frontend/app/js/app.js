@@ -43,33 +43,55 @@ class AppController {
       }
     });
 
-    // Eventos do formulário de Login
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('login-email').value;
-      const senha = document.getElementById('login-senha').value;
-      
-      this.showLoading();
-      try {
-        await window.auth.signInWithEmailAndPassword(email, senha);
-        this.showToast('Login efetuado com sucesso!', 'success');
-      } catch (err) {
-        this.showToast('Erro ao acessar: ' + err.message, 'error');
-      } finally {
-        this.hideLoading();
-      }
-    });
+    // Eventos do formulário de Login (se presente no DOM estático)
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const senha = document.getElementById('login-senha').value;
+        
+        this.showLoading();
+        try {
+          await window.auth.signInWithEmailAndPassword(email, senha);
+          this.showToast('Login efetuado com sucesso!', 'success');
+        } catch (err) {
+          this.showToast('Erro ao acessar: ' + err.message, 'error');
+        } finally {
+          this.hideLoading();
+        }
+      });
+    }
 
     // Evento Logout
-    document.getElementById('btn-logout').addEventListener('click', () => this.logout());
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', () => this.logout());
+    }
 
     // Mudança de Empresa
-    document.getElementById('empresa-selector').addEventListener('change', (e) => {
-      this.empresaAtiva = e.target.value;
-      localStorage.setItem('a7_empresa_ativa', this.empresaAtiva);
-      this.showToast('Empresa trocada com sucesso.', 'info');
-      this.handleRoute(); // recarrega a página com novo escopo
-    });
+    const empresaSelector = document.getElementById('empresa-selector');
+    if (empresaSelector) {
+      empresaSelector.addEventListener('change', (e) => {
+        this.empresaAtiva = e.target.value;
+        localStorage.setItem('a7_empresa_ativa', this.empresaAtiva);
+        this.showToast('Empresa trocada com sucesso.', 'info');
+        this.handleRoute(); // recarrega a página com novo escopo
+      });
+    }
+
+    // Navegação Mobile (Drawer) e Eventos de UI
+    this.initMobileNavigation();
+
+    // Fechar modal ao clicar fora
+    const modalOverlay = document.getElementById('modal-overlay');
+    if (modalOverlay) {
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+          this.closeModal();
+        }
+      });
+    }
 
     // Escutar mudanças no Hash (Routing)
     window.addEventListener('hashchange', () => this.handleRoute());
@@ -143,6 +165,11 @@ class AppController {
 
   handleRoute() {
     if(!this.currentUser) return;
+
+    // No mobile, fecha o sidebar drawer ao navegar
+    if (window.innerWidth < 1025) {
+      this.closeSidebar();
+    }
 
     const hash = window.location.hash || '#/dashboard';
     const path = hash.replace('#', '');
@@ -287,6 +314,69 @@ class AppController {
     } else {
       this.renderPage('<h2>Dashboard temporariamente indisponível.</h2>');
     }
+  }
+
+  // ==== Métodos de Controle do Menu Mobile (Drawer) ====
+  initMobileNavigation() {
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const closeBtn = document.getElementById('sidebar-close-btn');
+    const backdrop = document.getElementById('sidebar-backdrop');
+
+    if (mobileMenuBtn) {
+      mobileMenuBtn.addEventListener('click', () => this.toggleSidebar());
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.closeSidebar());
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener('click', () => this.closeSidebar());
+    }
+
+    // Tecla Escape fecha drawer e modais
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.closeSidebar();
+        this.closeModal();
+      }
+    });
+
+    // Fechar ao clicar em itens de navegação em viewports menores
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        if (window.innerWidth < 1025) {
+          this.closeSidebar();
+        }
+      });
+    });
+  }
+
+  toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar && sidebar.classList.contains('open')) {
+      this.closeSidebar();
+    } else {
+      this.openSidebar();
+    }
+  }
+
+  openSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const btn = document.getElementById('mobile-menu-btn');
+    if (sidebar) sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('active');
+    if (btn) btn.setAttribute('aria-expanded', 'true');
+  }
+
+  closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const btn = document.getElementById('mobile-menu-btn');
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
   }
 
   // ==== Utils Globais UI ====

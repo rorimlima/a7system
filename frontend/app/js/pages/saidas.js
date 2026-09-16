@@ -57,12 +57,12 @@ class SaidasPageManager {
           </div>
         </div>
 
-        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-          <div class="form-group" style="flex: 1;">
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+          <div class="form-group" style="flex: 1; min-width: min(100%, 120px);">
             <label>Quantidade</label>
             <input type="number" id="saida-qtd" class="form-control" min="1" value="1">
           </div>
-          <div class="form-group" style="flex: 2;">
+          <div class="form-group" style="flex: 2; min-width: min(100%, 180px);">
             <label>Motivo</label>
             <select id="saida-motivo" class="form-control">
               <option value="Perda">Perda</option>

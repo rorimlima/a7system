@@ -26,15 +26,16 @@
   --color-info: #2563EB;
   --color-info-light: #DBEAFE;
   
-  /* Tipografia */
+  /* Tipografia Fluida & Escala */
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
   --font-size-xs: 0.75rem;     /* 12px */
   --font-size-sm: 0.875rem;    /* 14px */
   --font-size-base: 1rem;      /* 16px */
-  --font-size-lg: 1.125rem;    /* 18px */
-  --font-size-xl: 1.25rem;     /* 20px */
-  --font-size-2xl: 1.5rem;     /* 24px */
-  --font-size-3xl: 1.875rem;   /* 30px */
+  --font-size-lg: clamp(1.05rem, 1vw + 0.8rem, 1.125rem);    /* 17-18px */
+  --font-size-xl: clamp(1.15rem, 1.5vw + 0.85rem, 1.25rem);   /* 18-20px */
+  --font-size-2xl: clamp(1.35rem, 2vw + 1rem, 1.5rem);        /* 22-24px */
+  --font-size-3xl: clamp(1.6rem, 3vw + 1rem, 1.875rem);       /* 26-30px */
+  --font-size-hero: clamp(1.85rem, 5vw + 1rem, 3rem);        /* 30-48px */
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
@@ -44,6 +45,11 @@
   --line-height-tight: 1.25;
   --line-height-normal: 1.5;
   --line-height-relaxed: 1.75;
+
+  /* Ergonomia e Alvos de Toque (Mobile Touch Targets) */
+  --touch-target-min: 44px;
+  --touch-target-height: 48px;
+  --tap-increment: 8px;
 
   /* Espaçamentos (Base 4px) */
   --spacing-1: 0.25rem;  /* 4px */
@@ -55,6 +61,11 @@
   --spacing-8: 2rem;     /* 32px */
   --spacing-10: 2.5rem;  /* 40px */
   --spacing-12: 3rem;    /* 48px */
+
+  /* Espaçamentos de Layout Responsivos */
+  --spacing-page-padding: clamp(0.75rem, 3vw, 1.5rem);
+  --spacing-card-padding: clamp(1rem, 2.5vw, 1.5rem);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Border Radius */
   --radius-sm: 0.125rem;
@@ -77,7 +88,9 @@
   /* Z-index */
   --z-dropdown: 1000;
   --z-sticky: 1020;
-  --z-fixed: 1030;
+  --z-drawer-backdrop: 1025;
+  --z-drawer: 1030;
+  --z-fixed: 1035;
   --z-modal-backdrop: 1040;
   --z-modal: 1050;
   --z-toast: 1060;

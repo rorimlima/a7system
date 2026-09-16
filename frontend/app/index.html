@@ -31,9 +31,12 @@
 
   <!-- ESTRUTURA PRINCIPAL (SPA) -->
   <div id="app-container" class="hidden">
-    <!-- Sidebar -->
-    <aside id="sidebar">
-      <div class="sidebar-logo">A7SYSTEM</div>
+    <!-- Sidebar / Drawer -->
+    <aside id="sidebar" aria-label="Menu Principal">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">A7SYSTEM</div>
+        <button id="sidebar-close-btn" class="sidebar-close-btn" aria-label="Fechar menu" title="Fechar menu">&times;</button>
+      </div>
       <nav class="sidebar-nav" id="sidebar-nav">
         <ul>
           <li><a href="#/dashboard" class="nav-item" data-path="/dashboard" data-roles="master,adm,vendedor,estoque"><span class="nav-icon">📊</span> Dashboard</a></li>
@@ -57,20 +60,25 @@
       </div>
     </aside>
 
+    <!-- Overlay Backdrop para fechar drawer com toque no mobile -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
     <!-- Content Area -->
     <div id="main-content">
       <!-- Top Bar -->
       <header id="top-bar">
         <div class="top-bar-left">
-          <button id="mobile-menu-btn" class="btn btn-outline" style="display: none;">☰</button>
+          <button id="mobile-menu-btn" class="btn btn-outline mobile-menu-btn" aria-label="Abrir menu de navegação" aria-controls="sidebar" aria-expanded="false">
+            <span class="hamburger-icon">☰</span>
+          </button>
           <div class="empresa-info">
-            <select id="empresa-selector" class="form-control" style="min-width: 200px;">
+            <select id="empresa-selector" class="form-control" aria-label="Selecionar empresa">
               <option value="">Carregando empresas...</option>
             </select>
           </div>
         </div>
         <div class="top-bar-right">
-          <span id="user-profile-name" style="font-weight: 500;">Usuário</span>
+          <span id="user-profile-name" class="user-profile-name">Usuário</span>
           <button id="btn-logout" class="btn btn-secondary">Sair</button>
         </div>
       </header>

@@ -10,8 +10,8 @@ window.FornecedoresPage = (function() {
 
   function render() {
     let html = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2>Gestão de Fornecedores</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+        <h2 style="margin: 0;">Gestão de Fornecedores</h2>
         <button class="btn btn-primary" id="btn-novo-forn">Novo Fornecedor</button>
       </div>
 
@@ -96,14 +96,14 @@ window.FornecedoresPage = (function() {
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">CNPJ / CPF</label>
             <input type="text" id="f-cnpjcpf" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" value="${isEdit ? forn.cnpjCpf : ''}">
           </div>
-          <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-            <div style="flex: 1;">
+          <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: min(100%, 140px);">
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Celular</label>
-              <input type="text" id="f-celular" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" value="${isEdit ? forn.celular : ''}">
+              <input type="text" id="f-celular" class="form-control" style="width: 100%;" value="${isEdit ? forn.celular : ''}">
             </div>
-            <div style="flex: 1;">
+            <div style="flex: 1; min-width: min(100%, 140px);">
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Fone Fixo</label>
-              <input type="text" id="f-fone" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" value="${isEdit ? forn.fone : ''}">
+              <input type="text" id="f-fone" class="form-control" style="width: 100%;" value="${isEdit ? forn.fone : ''}">
             </div>
           </div>
           <div style="margin-bottom: 1.5rem;">

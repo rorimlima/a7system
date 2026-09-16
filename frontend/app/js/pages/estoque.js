@@ -24,28 +24,28 @@ class EstoquePageManager {
         <h2 style="margin: 0;">Dashboard de Estoque</h2>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 1rem; margin-bottom: 2rem;">
         ${window.UI.createStatsCard('Total de Produtos', '156', '📦', 'Cadastrados no sistema')}
         ${window.UI.createStatsCard('Produtos em Estoque Crítico', this.produtosAlerta.length.toString(), '⚠️', 'Abaixo do mínimo exigido')}
         ${window.UI.createStatsCard('Última Movimentação', '16/09/2026', '⏱️', 'Entrada - Compra #123')}
       </div>
 
-      <div class="card" style="margin-bottom: 2rem; border-left: 4px solid #DC2626;">
+      <div class="card" style="margin-bottom: 2rem; border-left: 4px solid #DC2626; overflow-x: hidden;">
         <div class="card-header"><h3 class="card-title">Alertas de Estoque Mínimo</h3></div>
-        <div style="padding: 1rem;">
+        <div style="padding: 0.5rem 0;">
           ${this.renderAlertas()}
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" style="overflow-x: hidden;">
         <div class="card-header"><h3 class="card-title">Histórico de Movimentações</h3></div>
         
-        <div style="padding: 1rem; display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
-          <div class="form-group" style="flex: 1; min-width: 200px;">
+        <div style="padding: 1rem 0; display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+          <div class="form-group" style="flex: 1; min-width: min(100%, 180px);">
             <label>Produto</label>
             <input type="text" id="filtro-produto" class="form-control" placeholder="Buscar por nome ou código">
           </div>
-          <div class="form-group" style="width: 200px;">
+          <div class="form-group" style="flex: 1; min-width: min(100%, 140px);">
             <label>Tipo</label>
             <select id="filtro-tipo" class="form-control">
               <option value="">Todos</option>
@@ -55,11 +55,13 @@ class EstoquePageManager {
               <option value="ajuste">Ajustes</option>
             </select>
           </div>
-          <div class="form-group" style="width: 150px;">
+          <div class="form-group" style="flex: 1; min-width: min(100%, 140px);">
             <label>Data</label>
             <input type="date" id="filtro-data" class="form-control">
           </div>
-          <button class="btn btn-primary" onclick="window.EstoquePage.filtrar()" style="margin-bottom: 1rem;">Filtrar</button>
+          <div style="min-width: min(100%, 100px); margin-bottom: var(--spacing-4);">
+            <button class="btn btn-primary" onclick="window.EstoquePage.filtrar()" style="width: 100%;">Filtrar</button>
+          </div>
         </div>
 
         <div id="tabela-movimentacoes-container">
@@ -83,7 +85,7 @@ class EstoquePageManager {
       return '<p>Nenhum produto em estoque crítico.</p>';
     }
 
-    let html = '<table class="table" style="width: 100%;">';
+    let html = '<div class="table-responsive"><table class="table" style="width: 100%;">';
     html += '<thead><tr><th>Código</th><th>Descrição</th><th>Qtd Atual</th><th>Qtd Mínima</th><th>Ações</th></tr></thead><tbody>';
     
     this.produtosAlerta.forEach(prod => {
@@ -95,11 +97,10 @@ class EstoquePageManager {
         <td>${prod.descricao}</td>
         <td style="color: ${color}; font-weight: bold;">${prod.qtdAtual}</td>
         <td>${prod.qtdMinima}</td>
-        <td><a href="#/compras" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Comprar</a></td>
+        <td><a href="#/compras" class="btn btn-outline btn-sm">Comprar</a></td>
       </tr>`;
     });
-
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     return html;
   }
 

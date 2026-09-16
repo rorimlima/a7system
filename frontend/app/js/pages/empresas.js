@@ -14,8 +14,8 @@ window.EmpresasPage = (function() {
     const btnNova = isMaster ? `<button class="btn btn-primary" id="btn-nova-empresa">Nova Empresa</button>` : '';
     
     let html = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2>Gestão de Empresas</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+        <h2 style="margin: 0;">Gestão de Empresas</h2>
         ${btnNova}
       </div>
       <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -85,7 +85,7 @@ window.EmpresasPage = (function() {
         const isChecked = e.target.checked;
         try {
           window.appController.showLoading();
-          // window.api.patch(\`/companies/\${id}/visibility\`, { visible: isChecked })
+          // window.api.patch(\`/companies/${id}/visibility\`, { visible: isChecked })
           const emp = empresas.find(e => e.id === id);
           if (emp) emp.visivelNaLanding = isChecked;
           window.appController.showToast('Visibilidade atualizada com sucesso', 'success');
@@ -115,12 +115,12 @@ window.EmpresasPage = (function() {
             <input type="text" id="emp-cnpj" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 4px;" required value="${isEdit ? empresa.cnpj : ''}">
           </div>
           
-          <div style="margin-bottom: 1rem; display: flex; gap: 1rem;">
-            <div style="flex: 1;">
+          <div style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: min(100%, 120px);">
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Cor Primária</label>
               <input type="color" id="emp-cor-pri" value="${isEdit ? empresa.temaPrimaria : '#DC2626'}" style="width: 100%; height: 40px; padding: 2px; border: 1px solid #D1D5DB; border-radius: 4px;">
             </div>
-            <div style="flex: 1;">
+            <div style="flex: 1; min-width: min(100%, 120px);">
               <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Cor Secundária</label>
               <input type="color" id="emp-cor-sec" value="${isEdit ? empresa.temaSecundaria : '#111827'}" style="width: 100%; height: 40px; padding: 2px; border: 1px solid #D1D5DB; border-radius: 4px;">
             </div>

@@ -23,7 +23,7 @@ const LoginPage = {
             <div style="position: relative;">
               <span style="position: absolute; left: 10px; top: 10px; color: #9CA3AF;">🔒</span>
               <input type="password" id="dyn-login-senha" class="form-control" required placeholder="Sua senha" style="width: 100%; padding-left: 35px; padding-right: 35px; box-sizing: border-box; padding: 0.5rem 2.2rem 0.5rem 2.2rem; border: 1px solid #D1D5DB; border-radius: 4px;">
-              <button type="button" id="btn-toggle-senha" style="position: absolute; right: 5px; top: 5px; background: none; border: none; cursor: pointer; color: #9CA3AF; padding: 0.25rem;">👁️</button>
+              <button type="button" id="btn-toggle-senha" style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: #9CA3AF; padding: 0.25rem;">👁️</button>
             </div>
           </div>
           <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; justify-content: center; background-color: var(--color-primary, #DC2626); color: white; padding: 0.75rem; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background-color 0.2s;">

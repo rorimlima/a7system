@@ -30,67 +30,69 @@ window.VendasPage = (function() {
 
   function renderList() {
     const html = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <h2 style="margin: 0;">Vendas</h2>
-        <button id="btn-nova-venda" class="btn btn-primary" style="background-color: var(--primary-color); border-color: var(--primary-color); font-size: 1.1rem; padding: 0.75rem 1.5rem;">+ Nova Venda</button>
+        <button id="btn-nova-venda" class="btn btn-primary" style="background-color: var(--color-primary); border-color: var(--color-primary); font-size: 1rem; padding: 0.625rem 1.25rem;">+ Nova Venda</button>
       </div>
 
       <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
-          <div style="flex: 1; min-width: 200px;">
+          <div style="flex: 1; min-width: min(100%, 150px);">
             <label class="form-label">Data Inicial</label>
             <input type="date" class="form-control" id="filtro-data-ini">
           </div>
-          <div style="flex: 1; min-width: 200px;">
+          <div style="flex: 1; min-width: min(100%, 150px);">
             <label class="form-label">Data Final</label>
             <input type="date" class="form-control" id="filtro-data-fim">
           </div>
-          <div style="flex: 2; min-width: 300px;">
+          <div style="flex: 2; min-width: min(100%, 220px);">
             <label class="form-label">Cliente (Busca)</label>
             <input type="text" class="form-control" id="filtro-cliente" placeholder="Nome ou CPF/CNPJ">
           </div>
-          <div style="flex: 1; min-width: 200px;">
+          <div style="flex: 1; min-width: min(100%, 150px);">
             <label class="form-label">Nº Pedido</label>
             <input type="text" class="form-control" id="filtro-pedido" placeholder="Ex: A700001">
           </div>
-          <div>
-            <button class="btn btn-secondary">Filtrar</button>
+          <div style="min-width: min(100%, 120px);">
+            <button class="btn btn-secondary" style="width: 100%;">Filtrar</button>
           </div>
         </div>
       </div>
 
-      <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-        <table class="table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="border-bottom: 1px solid #E5E7EB; text-align: left;">
-              <th style="padding: 0.75rem;">Nº Pedido</th>
-              <th style="padding: 0.75rem;">Data</th>
-              <th style="padding: 0.75rem;">Cliente</th>
-              <th style="padding: 0.75rem;">Qtd Itens</th>
-              <th style="padding: 0.75rem;">Total (BRL)</th>
-              <th style="padding: 0.75rem;">Status</th>
-              <th style="padding: 0.75rem; text-align: right;">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${mockVendas.map(v => `
-              <tr style="border-bottom: 1px solid #E5E7EB;">
-                <td style="padding: 0.75rem;"><strong>${v.pedido}</strong></td>
-                <td style="padding: 0.75rem;">${formatDate(v.data)}</td>
-                <td style="padding: 0.75rem;">${v.cliente}</td>
-                <td style="padding: 0.75rem;">${v.itens}</td>
-                <td style="padding: 0.75rem;">R$ ${v.total.toFixed(2).replace('.', ',')}</td>
-                <td style="padding: 0.75rem;">
-                  <span class="badge ${v.status === 'Concluída' ? 'badge-success' : 'badge-warning'}">${v.status}</span>
-                </td>
-                <td style="padding: 0.75rem; text-align: right;">
-                  <button class="btn btn-sm btn-outline btn-detalhes" data-id="${v.id}">Detalhes</button>
-                  <button class="btn btn-sm btn-outline btn-recibo" data-id="${v.id}" title="Imprimir Recibo">📄</button>
-                </td>
+      <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow-x: hidden;">
+        <div class="table-responsive">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid #E5E7EB; text-align: left;">
+                <th style="padding: 0.75rem;">Nº Pedido</th>
+                <th style="padding: 0.75rem;">Data</th>
+                <th style="padding: 0.75rem;">Cliente</th>
+                <th style="padding: 0.75rem;">Qtd Itens</th>
+                <th style="padding: 0.75rem;">Total (BRL)</th>
+                <th style="padding: 0.75rem;">Status</th>
+                <th style="padding: 0.75rem; text-align: right;">Ações</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${mockVendas.map(v => `
+                <tr style="border-bottom: 1px solid #E5E7EB;">
+                  <td style="padding: 0.75rem;"><strong>${v.pedido}</strong></td>
+                  <td style="padding: 0.75rem;">${formatDate(v.data)}</td>
+                  <td style="padding: 0.75rem;">${v.cliente}</td>
+                  <td style="padding: 0.75rem;">${v.itens}</td>
+                  <td style="padding: 0.75rem;">R$ ${v.total.toFixed(2).replace('.', ',')}</td>
+                  <td style="padding: 0.75rem;">
+                    <span class="badge ${v.status === 'Concluída' ? 'badge-success' : 'badge-warning'}">${v.status}</span>
+                  </td>
+                  <td style="padding: 0.75rem; text-align: right;">
+                    <button class="btn btn-sm btn-outline btn-detalhes" data-id="${v.id}">Detalhes</button>
+                    <button class="btn btn-sm btn-outline btn-recibo" data-id="${v.id}" title="Imprimir Recibo">📄</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
 
@@ -149,22 +151,24 @@ window.VendasPage = (function() {
           </div>
         </div>
 
-        <table class="table" style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="border-bottom: 2px solid #E5E7EB; text-align: left;">
-              <th style="padding: 0.75rem;">Produto</th>
-              <th style="padding: 0.75rem; text-align: center;">Estoque</th>
-              <th style="padding: 0.75rem; width: 100px;">Qtd</th>
-              <th style="padding: 0.75rem; text-align: right;">Val. Unit.</th>
-              <th style="padding: 0.75rem; width: 120px;">Desconto</th>
-              <th style="padding: 0.75rem; text-align: right;">Subtotal</th>
-              <th style="padding: 0.75rem; text-align: center;">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-carrinho">
-            <tr><td colspan="7" style="text-align: center; padding: 2rem; color: #6B7280;">Nenhum produto no carrinho.</td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 2px solid #E5E7EB; text-align: left;">
+                <th style="padding: 0.75rem;">Produto</th>
+                <th style="padding: 0.75rem; text-align: center;">Estoque</th>
+                <th style="padding: 0.75rem; width: 100px;">Qtd</th>
+                <th style="padding: 0.75rem; text-align: right;">Val. Unit.</th>
+                <th style="padding: 0.75rem; width: 120px;">Desconto</th>
+                <th style="padding: 0.75rem; text-align: right;">Subtotal</th>
+                <th style="padding: 0.75rem; text-align: center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-carrinho">
+              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: #6B7280;">Nenhum produto no carrinho.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- RODAPÉ TOTAL -->
@@ -224,10 +228,10 @@ window.VendasPage = (function() {
     clienteSelecionado = cli;
     const div = document.getElementById('dados-cliente');
     div.style.display = 'block';
-    div.innerHTML = \`
-      <strong>\${cli.nome}</strong> (Doc: \${cli.documento})<br>
-      <span style="color: #6B7280; font-size: 0.9rem;">Endereço: \${cli.endereco}</span>
-    \`;
+    div.innerHTML = `
+      <strong>${cli.nome}</strong> (Doc: ${cli.documento})<br>
+      <span style="color: #6B7280; font-size: 0.9rem;">Endereço: ${cli.endereco}</span>
+    `;
   }
 
   function adicionarProduto(prod) {
@@ -272,32 +276,32 @@ window.VendasPage = (function() {
       
       const qtdErro = item.quantidade > item.produto.estoque;
 
-      html += \`
+      html += `
         <tr style="border-bottom: 1px solid #E5E7EB;">
           <td style="padding: 0.75rem;">
-            <strong>\${item.produto.codigo}</strong><br>
-            <span style="font-size: 0.9rem; color: #6B7280;">\${item.produto.descricao}</span>
+            <strong>${item.produto.codigo}</strong><br>
+            <span style="font-size: 0.9rem; color: #6B7280;">${item.produto.descricao}</span>
           </td>
-          <td style="padding: 0.75rem; text-align: center;">\${item.produto.estoque}</td>
+          <td style="padding: 0.75rem; text-align: center;">${item.produto.estoque}</td>
           <td style="padding: 0.75rem;">
-            <input type="number" min="1" value="\${item.quantidade}" class="form-control qtd-input" data-id="\${item.idItem}" style="width: 100%; \${qtdErro ? 'border-color: red;' : ''}" title="\${qtdErro ? 'Quantidade maior que estoque!' : ''}">
+            <input type="number" min="1" value="${item.quantidade}" class="form-control qtd-input" data-id="${item.idItem}" style="width: 100%; ${qtdErro ? 'border-color: red;' : ''}" title="${qtdErro ? 'Quantidade maior que estoque!' : ''}">
           </td>
-          <td style="padding: 0.75rem; text-align: right;">R$ \${item.produto.valor.toFixed(2).replace('.', ',')}</td>
+          <td style="padding: 0.75rem; text-align: right;">R$ ${item.produto.valor.toFixed(2).replace('.', ',')}</td>
           <td style="padding: 0.75rem;">
-            <input type="number" min="0" step="0.01" value="\${item.desconto}" class="form-control desc-input" data-id="\${item.idItem}" style="width: 100%;">
+            <input type="number" min="0" step="0.01" value="${item.desconto}" class="form-control desc-input" data-id="${item.idItem}" style="width: 100%;">
           </td>
-          <td style="padding: 0.75rem; text-align: right; font-weight: bold;">R$ \${subtotal.toFixed(2).replace('.', ',')}</td>
+          <td style="padding: 0.75rem; text-align: right; font-weight: bold;">R$ ${subtotal.toFixed(2).replace('.', ',')}</td>
           <td style="padding: 0.75rem; text-align: center;">
-            <button class="btn btn-sm btn-outline btn-remover" data-id="\${item.idItem}" style="color: red; border-color: red;">X</button>
+            <button class="btn btn-sm btn-outline btn-remover" data-id="${item.idItem}" style="color: red; border-color: red;">X</button>
           </td>
         </tr>
-      \`;
+      `;
     });
 
     tbody.innerHTML = html;
     
-    document.getElementById('total-venda').innerText = \`R$ \${totalVenda.toFixed(2).replace('.', ',')}\`;
-    document.getElementById('resumo-carrinho').innerHTML = \`\${qtdItens} itens | Descontos: R$ \${totalDesconto.toFixed(2).replace('.', ',')}\`;
+    document.getElementById('total-venda').innerText = `R$ ${totalVenda.toFixed(2).replace('.', ',')}`;
+    document.getElementById('resumo-carrinho').innerHTML = `${qtdItens} itens | Descontos: R$ ${totalDesconto.toFixed(2).replace('.', ',')}`;
 
     // Re-bind eventos
     document.querySelectorAll('.btn-remover').forEach(btn => {
@@ -338,7 +342,7 @@ window.VendasPage = (function() {
     }
 
     const total = document.getElementById('total-venda').innerText;
-    if (confirm(\`Confirmar venda de \${total} para \${clienteSelecionado.nome}?\`)) {
+    if (confirm(`Confirmar venda de ${total} para ${clienteSelecionado.nome}?`)) {
       window.appController.showLoading();
       setTimeout(() => {
         window.appController.hideLoading();
@@ -352,69 +356,73 @@ window.VendasPage = (function() {
     const venda = mockVendas.find(v => v.id === idVenda);
     if (!venda) return;
 
-    const html = \`
+    const html = `
       <div style="padding: 1rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1rem;">
-          <h3 style="margin: 0;">Detalhes da Venda - \${venda.pedido}</h3>
+          <h3 style="margin: 0;">Detalhes da Venda - ${venda.pedido}</h3>
           <button class="btn btn-outline" onclick="window.appController.closeModal()">Fechar</button>
         </div>
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; background: #F9FAFB; padding: 1rem; border-radius: 4px;">
-          <div><strong>Cliente:</strong> \${venda.cliente}</div>
-          <div><strong>Data:</strong> \${formatDate(venda.data)}</div>
-          <div><strong>Status:</strong> \${venda.status}</div>
-          <div><strong>Total:</strong> R$ \${venda.total.toFixed(2).replace('.', ',')}</div>
+          <div><strong>Cliente:</strong> ${venda.cliente}</div>
+          <div><strong>Data:</strong> ${formatDate(venda.data)}</div>
+          <div><strong>Status:</strong> ${venda.status}</div>
+          <div><strong>Total:</strong> R$ ${venda.total.toFixed(2).replace('.', ',')}</div>
         </div>
 
         <h4 style="margin-bottom: 0.5rem;">Itens</h4>
-        <table class="table" style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
-          <thead>
-            <tr style="border-bottom: 1px solid #ccc; text-align: left;">
-              <th>Produto</th>
-              <th>Qtd</th>
-              <th>Val. Unit.</th>
-              <th>Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- mock items -->
-            <tr style="border-bottom: 1px solid #eee;">
-              <td>Notebook Dell Inspiron</td>
-              <td>1</td>
-              <td>R$ 1.500,00</td>
-              <td>R$ 1.500,00</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table" style="width: 100%; border-collapse: collapse; margin-bottom: 0.5rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid #ccc; text-align: left;">
+                <th>Produto</th>
+                <th>Qtd</th>
+                <th>Val. Unit.</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- mock items -->
+              <tr style="border-bottom: 1px solid #eee;">
+                <td>Notebook Dell Inspiron</td>
+                <td>1</td>
+                <td>R$ 1.500,00</td>
+                <td>R$ 1.500,00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 1rem; flex-wrap: wrap; gap: 0.5rem;">
           <h4 style="margin: 0;">Recebimentos</h4>
           <button class="btn btn-primary btn-sm" id="btn-registrar-recebimento">Registrar Recebimento</button>
         </div>
-        <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 0.5rem; margin-bottom: 1.5rem;">
-          <thead>
-            <tr style="border-bottom: 1px solid #ccc; text-align: left;">
-              <th>Data</th>
-              <th>Forma</th>
-              <th>Valor</th>
-              <th>Obs</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="border-bottom: 1px solid #eee;">
-              <td>\${formatDate(venda.data)}</td>
-              <td>PIX</td>
-              <td>R$ \${venda.total.toFixed(2).replace('.', ',')}</td>
-              <td>Sinal</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+            <thead>
+              <tr style="border-bottom: 1px solid #ccc; text-align: left;">
+                <th>Data</th>
+                <th>Forma</th>
+                <th>Valor</th>
+                <th>Obs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #eee;">
+                <td>${formatDate(venda.data)}</td>
+                <td>PIX</td>
+                <td>R$ ${venda.total.toFixed(2).replace('.', ',')}</td>
+                <td>Sinal</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         
         <div style="text-align: right;">
           <button class="btn btn-secondary">Imprimir Recibo PDF</button>
         </div>
       </div>
-    \`;
+    `;
 
     window.appController.showModal(html);
     
@@ -422,12 +430,12 @@ window.VendasPage = (function() {
   }
 
   function abrirSubModalRecebimento() {
-    const html = \`
+    const html = `
       <div style="padding: 1rem;">
         <h3 style="margin-top: 0; margin-bottom: 1rem;">Registrar Recebimento</h3>
         <div style="margin-bottom: 1rem;">
           <label class="form-label">Data</label>
-          <input type="date" class="form-control" id="rec-data" value="\${new Date().toISOString().split('T')[0]}">
+          <input type="date" class="form-control" id="rec-data" value="${new Date().toISOString().split('T')[0]}">
         </div>
         <div style="margin-bottom: 1rem;">
           <label class="form-label">Forma de Pagamento</label>
@@ -453,7 +461,7 @@ window.VendasPage = (function() {
           <button class="btn btn-primary" id="btn-salvar-rec">Salvar</button>
         </div>
       </div>
-    \`;
+    `;
     window.appController.showModal(html);
 
     document.getElementById('btn-cancel-rec').addEventListener('click', window.appController.closeModal);
@@ -466,7 +474,7 @@ window.VendasPage = (function() {
   function formatDate(dateStr) {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-');
-    return \`\${d}/\${m}/\${y}\`;
+    return `${d}/${m}/${y}`;
   }
 
   return { render };

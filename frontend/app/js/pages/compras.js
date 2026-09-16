@@ -34,34 +34,36 @@ window.ComprasPage = {
           <button class="btn btn-secondary">Filtrar</button>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 2px solid #E5E7EB;">
-              <th style="padding: 0.75rem;">Data</th>
-              <th style="padding: 0.75rem;">Nº Nota</th>
-              <th style="padding: 0.75rem;">Fornecedor</th>
-              <th style="padding: 0.75rem;">Qtd Itens</th>
-              <th style="padding: 0.75rem;">Valor Total</th>
-              <th style="padding: 0.75rem;">Status</th>
-              <th style="padding: 0.75rem;">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${this.compras.map(c => `
-              <tr style="border-bottom: 1px solid #E5E7EB;">
-                <td style="padding: 0.75rem;">${c.data}</td>
-                <td style="padding: 0.75rem;">${c.nota}</td>
-                <td style="padding: 0.75rem;">${c.fornecedor}</td>
-                <td style="padding: 0.75rem;">${c.qtdItens}</td>
-                <td style="padding: 0.75rem;">${this.formatCurrency(c.total)}</td>
-                <td style="padding: 0.75rem;">${window.UI ? window.UI.createBadge(c.status, 'success') : c.status}</td>
-                <td style="padding: 0.75rem;">
-                  <button class="btn btn-sm btn-outline" onclick="window.ComprasPage.verDetalhes(${c.id})">Ver</button>
-                </td>
+        <div class="table-responsive">
+          <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 2px solid #E5E7EB;">
+                <th style="padding: 0.75rem;">Data</th>
+                <th style="padding: 0.75rem;">Nº Nota</th>
+                <th style="padding: 0.75rem;">Fornecedor</th>
+                <th style="padding: 0.75rem;">Qtd Itens</th>
+                <th style="padding: 0.75rem;">Valor Total</th>
+                <th style="padding: 0.75rem;">Status</th>
+                <th style="padding: 0.75rem;">Ações</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${this.compras.map(c => `
+                <tr style="border-bottom: 1px solid #E5E7EB;">
+                  <td style="padding: 0.75rem;">${c.data}</td>
+                  <td style="padding: 0.75rem;">${c.nota}</td>
+                  <td style="padding: 0.75rem;">${c.fornecedor}</td>
+                  <td style="padding: 0.75rem;">${c.qtdItens}</td>
+                  <td style="padding: 0.75rem;">${this.formatCurrency(c.total)}</td>
+                  <td style="padding: 0.75rem;">${window.UI ? window.UI.createBadge(c.status, 'success') : c.status}</td>
+                  <td style="padding: 0.75rem;">
+                    <button class="btn btn-sm btn-outline" onclick="window.ComprasPage.verDetalhes(${c.id})">Ver</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
     window.appController.renderPage(html);
@@ -109,8 +111,8 @@ window.ComprasPage = {
           <button class="btn btn-sm btn-primary" style="background-color: #111827; border-color: #111827;" onclick="window.ComprasPage.adicionarItem()">+ Adicionar Item</button>
         </div>
         
-        <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; min-width: 800px;" id="tabela-itens">
+        <div class="table-responsive">
+          <table style="width: 100%; border-collapse: collapse; min-width: 700px;" id="tabela-itens">
             <thead>
               <tr style="background-color: #F9FAFB;">
                 <th style="padding: 0.75rem; text-align: left;">Produto / Descrição</th>
@@ -389,16 +391,20 @@ window.ComprasPage = {
         </div>
 
         <h4 style="margin-bottom: 0.5rem;">Itens (Resumo)</h4>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
-          <tr style="background: #F9FAFB;"><th style="padding: 0.5rem; text-align: left;">Qtd</th><th style="padding: 0.5rem; text-align: left;">Produto</th><th style="padding: 0.5rem; text-align: right;">Total</th></tr>
-          <tr><td style="padding: 0.5rem;">${compra.qtdItens}</td><td style="padding: 0.5rem;">Itens Diversos</td><td style="padding: 0.5rem; text-align: right;">${this.formatCurrency(compra.total)}</td></tr>
-        </table>
+        <div class="table-responsive">
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
+            <tr style="background: #F9FAFB;"><th style="padding: 0.5rem; text-align: left;">Qtd</th><th style="padding: 0.5rem; text-align: left;">Produto</th><th style="padding: 0.5rem; text-align: right;">Total</th></tr>
+            <tr><td style="padding: 0.5rem;">${compra.qtdItens}</td><td style="padding: 0.5rem;">Itens Diversos</td><td style="padding: 0.5rem; text-align: right;">${this.formatCurrency(compra.total)}</td></tr>
+          </table>
+        </div>
         
         <h4 style="margin-bottom: 0.5rem;">Parcelas</h4>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
-          <tr style="background: #F9FAFB;"><th style="padding: 0.5rem; text-align: left;">Vencimento</th><th style="padding: 0.5rem; text-align: right;">Valor</th><th style="padding: 0.5rem; text-align: center;">Status</th></tr>
-          <tr><td style="padding: 0.5rem;">${compra.data}</td><td style="padding: 0.5rem; text-align: right;">${this.formatCurrency(compra.total)}</td><td style="padding: 0.5rem; text-align: center;">${window.UI ? window.UI.createBadge('Pago', 'success') : 'Pago'}</td></tr>
-        </table>
+        <div class="table-responsive">
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
+            <tr style="background: #F9FAFB;"><th style="padding: 0.5rem; text-align: left;">Vencimento</th><th style="padding: 0.5rem; text-align: right;">Valor</th><th style="padding: 0.5rem; text-align: center;">Status</th></tr>
+            <tr><td style="padding: 0.5rem;">${compra.data}</td><td style="padding: 0.5rem; text-align: right;">${this.formatCurrency(compra.total)}</td><td style="padding: 0.5rem; text-align: center;">${window.UI ? window.UI.createBadge('Pago', 'success') : 'Pago'}</td></tr>
+          </table>
+        </div>
         
         <div style="text-align: right;">
           <button class="btn btn-secondary" onclick="window.appController.closeModal()">Fechar</button>

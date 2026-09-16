@@ -39,7 +39,7 @@ window.ContasPagarPage = {
       <div class="page-header" style="margin-bottom: 2rem;">
         <h2 style="margin: 0; margin-bottom: 1rem;">Contas a Pagar</h2>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 1rem;">
           <div class="card" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid #111827;">
             <div style="font-size: 0.9rem; color: #6B7280; margin-bottom: 0.5rem;">Total em Aberto</div>
             <div style="font-size: 1.5rem; font-weight: bold; color: #111827;">${this.formatCurrency(totalAberto)}</div>
@@ -55,88 +55,96 @@ window.ContasPagarPage = {
         </div>
       </div>
 
-      <div class="card" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 2rem;">
+      <div class="card" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 2rem; overflow-x: hidden;">
         
         <!-- Abas / Filtros -->
-        <div style="display: flex; gap: 1rem; border-bottom: 1px solid #E5E7EB; margin-bottom: 1.5rem;">
-          <button style="padding: 0.75rem 1rem; background: none; border: none; font-weight: 500; cursor: pointer; border-bottom: 2px solid ${this.filtroAtual === 'todas' ? '#111827' : 'transparent'}; color: ${this.filtroAtual === 'todas' ? '#111827' : '#6B7280'};" onclick="window.ContasPagarPage.mudarFiltro('todas')">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #E5E7EB; padding-bottom: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-sm ${this.filtroAtual === 'todas' ? 'btn-primary' : 'btn-outline'}" 
+                  onclick="window.ContasPagarPage.filtrar('todas')">
             Todas
           </button>
-          <button style="padding: 0.75rem 1rem; background: none; border: none; font-weight: 500; cursor: pointer; border-bottom: 2px solid ${this.filtroAtual === 'vencendo' ? '#111827' : 'transparent'}; color: ${this.filtroAtual === 'vencendo' ? '#111827' : '#6B7280'};" onclick="window.ContasPagarPage.mudarFiltro('vencendo')">
-            Vencendo (30 dias) <span style="background: #F3F4F6; color: #374151; padding: 2px 6px; border-radius: 12px; font-size: 0.8rem; margin-left: 4px;">2</span>
+          <button class="btn btn-sm ${this.filtroAtual === 'vencendo' ? 'btn-primary' : 'btn-outline'}" 
+                  onclick="window.ContasPagarPage.filtrar('vencendo')">
+            Vencendo Hoje / 7 Dias
           </button>
-          <button style="padding: 0.75rem 1rem; background: none; border: none; font-weight: 500; cursor: pointer; border-bottom: 2px solid ${this.filtroAtual === 'atrasadas' ? '#DC2626' : 'transparent'}; color: ${this.filtroAtual === 'atrasadas' ? '#DC2626' : '#6B7280'};" onclick="window.ContasPagarPage.mudarFiltro('atrasadas')">
-            Atrasadas <span style="background: #FEE2E2; color: #DC2626; padding: 2px 6px; border-radius: 12px; font-size: 0.8rem; margin-left: 4px;">1</span>
+          <button class="btn btn-sm ${this.filtroAtual === 'atrasadas' ? 'btn-primary' : 'btn-outline'}" 
+                  style="${this.filtroAtual === 'atrasadas' ? 'background-color: #DC2626; border-color: #DC2626;' : ''}"
+                  onclick="window.ContasPagarPage.filtrar('atrasadas')">
+            Atrasadas (${totalAtrasado > 0 ? this.formatCurrency(totalAtrasado) : '0'})
           </button>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
-          <thead>
-            <tr style="border-bottom: 2px solid #E5E7EB; color: #374151;">
-              <th style="padding: 0.75rem;">Fornecedor</th>
-              <th style="padding: 0.75rem;">Origem</th>
-              <th style="padding: 0.75rem; text-align: right;">Total</th>
-              <th style="padding: 0.75rem; text-align: right;">Pago</th>
-              <th style="padding: 0.75rem; text-align: right;">Em Aberto</th>
-              <th style="padding: 0.75rem; text-align: center;">Parcelas</th>
-              <th style="padding: 0.75rem; text-align: center;">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${this.getContasFiltradas().map(c => `
-              <tr style="border-bottom: 1px solid #E5E7EB;">
-                <td style="padding: 0.75rem; font-weight: 500;">${c.fornecedor}</td>
-                <td style="padding: 0.75rem;">
-                  ${c.compraId ? `<a href="#/compras" style="color: #2563EB; text-decoration: none;">Compra #${c.compraId}</a>` : 'Avulso'}
-                </td>
-                <td style="padding: 0.75rem; text-align: right;">${this.formatCurrency(c.total)}</td>
-                <td style="padding: 0.75rem; text-align: right; color: #10B981;">${this.formatCurrency(c.pago)}</td>
-                <td style="padding: 0.75rem; text-align: right; font-weight: 500;">${this.formatCurrency(c.emAberto)}</td>
-                <td style="padding: 0.75rem; text-align: center;">${c.qtdParcelas}</td>
-                <td style="padding: 0.75rem; text-align: center;">
-                  <button class="btn btn-sm btn-outline" onclick="window.ContasPagarPage.verParcelas(${c.id})">Ver Parcelas</button>
-                </td>
+        <div class="table-responsive">
+          <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 2px solid #E5E7EB; color: #374151;">
+                <th style="padding: 0.75rem;">Fornecedor</th>
+                <th style="padding: 0.75rem;">Origem</th>
+                <th style="padding: 0.75rem; text-align: right;">Total</th>
+                <th style="padding: 0.75rem; text-align: right;">Pago</th>
+                <th style="padding: 0.75rem; text-align: right;">Em Aberto</th>
+                <th style="padding: 0.75rem; text-align: center;">Parcelas</th>
+                <th style="padding: 0.75rem; text-align: center;">Ações</th>
               </tr>
-              <tr id="parcelas-row-${c.id}" style="display: none; background-color: #F9FAFB;">
-                <td colspan="7" style="padding: 1rem; border-bottom: 1px solid #E5E7EB;">
-                  <div style="background: white; border: 1px solid #E5E7EB; border-radius: 4px; padding: 1rem;">
-                    <h4 style="margin-top: 0; margin-bottom: 1rem; font-size: 0.9rem; color: #6B7280;">Detalhamento de Parcelas</h4>
-                    <table style="width: 100%; border-collapse: collapse;">
-                      <thead>
-                        <tr style="border-bottom: 1px solid #E5E7EB; font-size: 0.85rem; color: #6B7280;">
-                          <th style="padding: 0.5rem; text-align: left;">Nº</th>
-                          <th style="padding: 0.5rem; text-align: left;">Vencimento</th>
-                          <th style="padding: 0.5rem; text-align: right;">Valor</th>
-                          <th style="padding: 0.5rem; text-align: center;">Status</th>
-                          <th style="padding: 0.5rem; text-align: left;">Pagamento</th>
-                          <th style="padding: 0.5rem; text-align: right;">Ação</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${c.parcelas.map(p => `
-                          <tr style="border-bottom: 1px solid #F3F4F6;">
-                            <td style="padding: 0.5rem;">${p.num}</td>
-                            <td style="padding: 0.5rem;">${p.vencimento}</td>
-                            <td style="padding: 0.5rem; text-align: right; font-weight: 500;">${this.formatCurrency(p.valor)}</td>
-                            <td style="padding: 0.5rem; text-align: center;">${this.getBadgeStatus(p.status)}</td>
-                            <td style="padding: 0.5rem; font-size: 0.85rem;">
-                              ${p.status === 'pago' ? `<span style="color: #10B981;">${p.pagamentoData} - ${p.forma}</span>` : '-'}
-                            </td>
-                            <td style="padding: 0.5rem; text-align: right;">
-                              ${p.status !== 'pago' ? `
-                                <button class="btn btn-sm" style="background-color: #10B981; color: white; border: none; padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 4px;" onclick="window.ContasPagarPage.abrirModalBaixa(${c.id}, ${p.num})">Baixar</button>
-                              ` : ''}
-                            </td>
-                          </tr>
-                        `).join('')}
-                      </tbody>
-                    </table>
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              ${this.getContasFiltradas().map(c => `
+                <tr style="border-bottom: 1px solid #E5E7EB;">
+                  <td style="padding: 0.75rem; font-weight: 500;">${c.fornecedor}</td>
+                  <td style="padding: 0.75rem;">
+                    ${c.compraId ? `<a href="#/compras" style="color: #2563EB; text-decoration: none;">Compra #${c.compraId}</a>` : 'Avulso'}
+                  </td>
+                  <td style="padding: 0.75rem; text-align: right;">${this.formatCurrency(c.total)}</td>
+                  <td style="padding: 0.75rem; text-align: right; color: #10B981;">${this.formatCurrency(c.pago)}</td>
+                  <td style="padding: 0.75rem; text-align: right; font-weight: 500;">${this.formatCurrency(c.emAberto)}</td>
+                  <td style="padding: 0.75rem; text-align: center;">${c.qtdParcelas}</td>
+                  <td style="padding: 0.75rem; text-align: center;">
+                    <button class="btn btn-sm btn-outline" onclick="window.ContasPagarPage.verParcelas(${c.id})">Ver Parcelas</button>
+                  </td>
+                </tr>
+                <tr id="parcelas-row-${c.id}" style="display: none; background-color: #F9FAFB;">
+                  <td colspan="7" style="padding: 1rem; border-bottom: 1px solid #E5E7EB;">
+                    <div style="background: white; border: 1px solid #E5E7EB; border-radius: 4px; padding: 1rem;">
+                      <h4 style="margin-top: 0; margin-bottom: 1rem; font-size: 0.9rem; color: #6B7280;">Detalhamento de Parcelas</h4>
+                      <div class="table-responsive">
+                        <table style="width: 100%; border-collapse: collapse;">
+                          <thead>
+                            <tr style="border-bottom: 1px solid #E5E7EB; font-size: 0.85rem; color: #6B7280;">
+                              <th style="padding: 0.5rem; text-align: left;">Nº</th>
+                              <th style="padding: 0.5rem; text-align: left;">Vencimento</th>
+                              <th style="padding: 0.5rem; text-align: right;">Valor</th>
+                              <th style="padding: 0.5rem; text-align: center;">Status</th>
+                              <th style="padding: 0.5rem; text-align: left;">Pagamento</th>
+                              <th style="padding: 0.5rem; text-align: right;">Ação</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${c.parcelas.map(p => `
+                              <tr style="border-bottom: 1px solid #F3F4F6;">
+                                <td style="padding: 0.5rem;">${p.num}</td>
+                                <td style="padding: 0.5rem;">${p.vencimento}</td>
+                                <td style="padding: 0.5rem; text-align: right; font-weight: 500;">${this.formatCurrency(p.valor)}</td>
+                                <td style="padding: 0.5rem; text-align: center;">${this.getBadgeStatus(p.status)}</td>
+                                <td style="padding: 0.5rem; font-size: 0.85rem;">
+                                  ${p.status === 'pago' ? `<span style="color: #10B981;">${p.pagamentoData} - ${p.forma}</span>` : '-'}
+                                </td>
+                                <td style="padding: 0.5rem; text-align: right;">
+                                  ${p.status !== 'pago' ? `
+                                    <button class="btn btn-sm" style="background-color: #10B981; color: white; border: none; padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 4px;" onclick="window.ContasPagarPage.abrirModalBaixa(${c.id}, ${p.num})">Baixar</button>
+                                  ` : ''}
+                                </td>
+                              </tr>
+                            `).join('')}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       </div>
       
       <style>

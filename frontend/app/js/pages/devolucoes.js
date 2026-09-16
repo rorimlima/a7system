@@ -29,7 +29,7 @@ class DevolucoesPageManager {
                 d.data, 
                 d.fornecedor, 
                 d.itens, 
-                \`R$ \${d.valor.toFixed(2)}\`, 
+                `R$ ${d.valor.toFixed(2)}`, 
                 d.motivo, 
                 d.retorno === 'Sim' ? window.UI.createBadge('Sim', 'success') : window.UI.createBadge('Não', 'secondary'),
                 '<button class="btn btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.8rem;">Ver</button>'
@@ -72,7 +72,7 @@ class DevolucoesPageManager {
           </div>
           <div class="form-group" style="flex: 1; min-width: 150px;">
             <label>Data</label>
-            <input type="date" class="form-control" id="dev-data" value="\${new Date().toISOString().split('T')[0]}">
+            <input type="date" class="form-control" id="dev-data" value="${new Date().toISOString().split('T')[0]}">
           </div>
           <div class="form-group" style="width: 100%;">
             <label>Motivo da Devolução *</label>
@@ -84,8 +84,8 @@ class DevolucoesPageManager {
       <div class="card" style="margin-bottom: 1.5rem;">
         <div class="card-header"><h3 class="card-title">Itens da Devolução</h3></div>
         <div style="padding: 1rem;">
-          <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem; background: #f9fafb; padding: 1rem; border-radius: 4px; border: 1px solid #e5e7eb;">
-            <div class="form-group" style="flex: 2;">
+          <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1rem; background: #f9fafb; padding: 1rem; border-radius: 4px; border: 1px solid #e5e7eb; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 2; min-width: min(100%, 200px);">
               <label>Produto</label>
               <select class="form-control" id="dev-item-produto">
                 <option value="">Selecione...</option>
@@ -93,31 +93,35 @@ class DevolucoesPageManager {
                 <option value="2" data-nome="Mouse Sem Fio" data-estoque="5" data-preco="150.00">Mouse Sem Fio (Estoque: 5)</option>
               </select>
             </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group" style="flex: 1; min-width: min(100%, 100px);">
               <label>Qtd</label>
               <input type="number" class="form-control" id="dev-item-qtd" min="1" value="1">
             </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group" style="flex: 1; min-width: min(100%, 120px);">
               <label>V. Unitário (R$)</label>
               <input type="number" class="form-control" id="dev-item-valor" min="0" step="0.01">
             </div>
-            <button class="btn btn-secondary" onclick="window.DevolucoesPage.adicionarItem()">Adicionar</button>
+            <div style="min-width: min(100%, 110px); margin-bottom: var(--spacing-4);">
+              <button class="btn btn-secondary" onclick="window.DevolucoesPage.adicionarItem()" style="width: 100%;">Adicionar</button>
+            </div>
           </div>
 
-          <table class="table" id="tabela-dev-itens">
-            <thead>
-              <tr>
-                <th>Produto</th>
-                <th>Qtd</th>
-                <th>V. Unit (R$)</th>
-                <th>Total (R$)</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="5" style="text-align:center;">Nenhum item adicionado.</td></tr>
-            </tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="table" id="tabela-dev-itens">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Qtd</th>
+                  <th>V. Unit (R$)</th>
+                  <th>Total (R$)</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="5" style="text-align:center;">Nenhum item adicionado.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -214,15 +218,15 @@ class DevolucoesPageManager {
     } else {
       this.itensDevolucao.forEach((item, index) => {
         totalGeral += item.total;
-        html += \`
+        html += `
           <tr>
-            <td>\${item.nome}</td>
-            <td>\${item.qtd}</td>
-            <td>R$ \${item.valor.toFixed(2)}</td>
-            <td>R$ \${item.total.toFixed(2)}</td>
-            <td><button class="btn btn-outline" style="color:#DC2626; border-color:#DC2626; padding: 0.2rem 0.5rem;" onclick="window.DevolucoesPage.removerItem(\${index})">X</button></td>
+            <td>${item.nome}</td>
+            <td>${item.qtd}</td>
+            <td>R$ ${item.valor.toFixed(2)}</td>
+            <td>R$ ${item.total.toFixed(2)}</td>
+            <td><button class="btn btn-outline" style="color:#DC2626; border-color:#DC2626; padding: 0.2rem 0.5rem;" onclick="window.DevolucoesPage.removerItem(${index})">X</button></td>
           </tr>
-        \`;
+        `;
       });
     }
 
