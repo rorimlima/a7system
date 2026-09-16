@@ -4,12 +4,14 @@ Main entry point for the A7SYSTEM FastAPI application.
 import os
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from shared.firebase_init import initialize_firebase
 from shared.errors import A7SystemError, setup_exception_handlers
+from shared.security import SecurityHeadersMiddleware, input_sanitization_middleware, rate_limiter
 
 # Load environment variables
 load_dotenv()
@@ -39,6 +41,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Setup Security middlewares
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Add input sanitization as base http middleware
+app.middleware("http")(input_sanitization_middleware)
+
 # Setup global exception handlers
 setup_exception_handlers(app)
 
@@ -46,6 +54,11 @@ setup_exception_handlers(app)
 def health_check() -> dict:
     """Health check endpoint to verify API status."""
     return {"status": "ok", "version": "1.0.0"}
+
+# Rate limiting dependency for auth
+def auth_rate_limit(request: Request):
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    rate_limiter.check_rate_limit(client_ip, request.url.path, limit=10, window_seconds=60)
 
 # Include routers
 from auth.routes import router as auth_router
@@ -57,7 +70,8 @@ from products.estoque_routes import router as estoque_router
 from purchases.routes import router as purchases_router
 from purchases.parcelas_routes import router as parcelas_router
 
-app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
+# Inject rate limit dependency into auth router
+app.include_router(auth_router, prefix="/api/auth", tags=["Auth"], dependencies=[Depends(auth_rate_limit)])
 app.include_router(companies_router, prefix="/api/companies", tags=["Companies"])
 app.include_router(fornecedores_router, prefix="/api/fornecedores", tags=["Fornecedores"])
 app.include_router(clientes_router, prefix="/api/clientes", tags=["Clientes"])
