@@ -204,6 +204,22 @@ class AppController {
       case '/produtos':
         if (window.ProdutosPage) window.ProdutosPage.render();
         break;
+      case '/compras':
+        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
+          if (window.ComprasPage) window.ComprasPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
+      case '/contas-pagar':
+        if (this.hasRole('master') || this.hasRole('adm')) {
+          if (window.ContasPagarPage) window.ContasPagarPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
       case '/vendas':
         // Exemplo genérico de página sendo montada
         contentArea.innerHTML = window.UI.createCard(`Página: ${path.substring(1).toUpperCase()}`, `<p>Módulo em desenvolvimento.</p>`);
