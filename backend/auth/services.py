@@ -19,6 +19,8 @@ def validate_password_strength(senha: str) -> bool:
         return False
     if not re.search(r"\d", senha):
         return False
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", senha):
+        return False
     return True
 
 def authenticate_user(email: str, senha: str, db: Session) -> Optional[Usuario]:

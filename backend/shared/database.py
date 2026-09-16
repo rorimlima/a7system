@@ -13,12 +13,16 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres.vjzuqdjmadjxyvrfzbod:reivax%40rorim7@aws-0-sa-east-1.pooler.supabase.com:5432/postgres"
 )
 
-# Pool configuration optimized for Supabase Pooler
+# SQLAlchemy requer postgresql:// em vez de postgres://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Pool configuration optimized for Supabase Pooler and Serverless
 engine = create_engine(
     DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_recycle=1800,
+    pool_size=5,
+    max_overflow=10,
+    pool_recycle=300,
     pool_pre_ping=True
 )
 

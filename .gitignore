@@ -10,8 +10,12 @@ env/
 .firebase/
 firebase-debug.log
 
-# Arquivos gerados
+# Arquivos gerados e uploads
 *.pdf
+uploads/
+backend/uploads/
+.vercel/
+
 
 # Configurações pessoais e IDE
 .vscode/
