@@ -9,7 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from shared.firebase_init import initialize_firebase
+from shared.database import engine
+from sqlalchemy import text
 from shared.errors import A7SystemError, setup_exception_handlers
 from shared.security import SecurityHeadersMiddleware, input_sanitization_middleware, rate_limiter
 
@@ -19,8 +20,12 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle events for the FastAPI application."""
-    # Initialize Firebase Admin
-    initialize_firebase()
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        print("[DATABASE] Conectado ao PostgreSQL (Supabase) com sucesso!")
+    except Exception as e:
+        print(f"[DATABASE] Falha ao conectar ao PostgreSQL: {e}")
     yield
 
 # Create FastAPI application

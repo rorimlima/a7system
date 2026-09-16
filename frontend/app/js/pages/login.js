@@ -64,18 +64,31 @@ const LoginPage = {
       if (window.appController) window.appController.showLoading();
 
       try {
-        await window.auth.signInWithEmailAndPassword(email, senha);
-        if (window.appController) window.appController.showToast('Login efetuado com sucesso!', 'success');
-      } catch (err) {
-        let msg = 'Erro ao acessar. Tente novamente.';
-        switch (err.code) {
-          case 'auth/wrong-password': msg = 'Senha incorreta'; break;
-          case 'auth/user-not-found': msg = 'Usuário não encontrado'; break;
-          case 'auth/too-many-requests': msg = 'Muitas tentativas. Aguarde alguns minutos.'; break;
-          case 'auth/invalid-email': msg = 'E-mail inválido'; break;
-          case 'auth/user-disabled': msg = 'Conta desativada. Contate o administrador.'; break;
-          case 'auth/invalid-credential': msg = 'Credenciais inválidas'; break;
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, senha })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || 'E-mail ou senha inválidos.');
         }
+
+        localStorage.setItem('a7_token', data.access_token);
+        localStorage.setItem('a7_user', JSON.stringify(data.user));
+        if (data.user.empresa_ativa) {
+          localStorage.setItem('a7_empresa_ativa', data.user.empresa_ativa);
+        }
+
+        if (window.appController) {
+          window.appController.currentUser = data.user;
+          window.appController.claims = { papeis: data.user.papeis || [], empresasIds: data.user.empresasIds || [] };
+          window.appController.showApp();
+          window.appController.showToast('Login efetuado com sucesso!', 'success');
+          window.appController.navigate('/dashboard');
+        }
+      } catch (err) {
+        const msg = err.message || 'Erro ao acessar o sistema.';
         if (window.appController) window.appController.showToast(msg, 'error');
         else alert(msg);
       } finally {

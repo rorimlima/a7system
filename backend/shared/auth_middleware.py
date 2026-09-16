@@ -5,7 +5,7 @@ from typing import List, Optional, Callable
 from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from shared.firebase_init import get_auth_client
+from shared.jwt_auth import decode_access_token
 from shared.errors import ForbiddenError, A7SystemError
 
 security = HTTPBearer()
@@ -19,11 +19,10 @@ class UserContext(BaseModel):
     empresa_ativa: Optional[str] = None
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
-    """Validate Firebase ID token and return decoded token data."""
+    """Validate JWT access token and return decoded token data."""
     token = credentials.credentials
-    auth_client = get_auth_client()
     try:
-        decoded_token = auth_client.verify_id_token(token)
+        decoded_token = decode_access_token(token)
         return decoded_token
     except Exception as e:
         raise ForbiddenError(f"Invalid authentication token: {str(e)}")
@@ -33,24 +32,29 @@ def get_current_user(
     decoded_token: dict = Depends(verify_token)
 ) -> UserContext:
     """Extract user information from the decoded token."""
-    uid = decoded_token.get("uid", "")
+    uid = decoded_token.get("uid") or decoded_token.get("sub", "")
     email = decoded_token.get("email", "")
     
     # Custom claims
     papeis = decoded_token.get("papeis", [])
     empresas_ids = decoded_token.get("empresasIds", [])
+    if isinstance(empresas_ids, str):
+        empresas_ids = [empresas_ids]
     
-    # Anti-IDOR: capture active company from header if provided, validate against claims
-    empresa_ativa = request.headers.get("X-Empresa-ID")
-    if empresa_ativa and empresa_ativa not in empresas_ids:
-        raise ForbiddenError("User does not have access to the requested company.")
+    # Anti-IDOR: capture active company from header if provided
+    empresa_ativa = request.headers.get("X-Empresa-ID") or request.headers.get("x-empresa-id")
+    if empresa_ativa and empresas_ids and empresa_ativa not in empresas_ids:
+        if "master" not in papeis:
+            raise ForbiddenError("User does not have access to the requested company.")
+    if not empresa_ativa and empresas_ids:
+        empresa_ativa = empresas_ids[0]
         
     return UserContext(
-        uid=uid,
+        uid=str(uid),
         email=email,
         papeis=papeis if isinstance(papeis, list) else [papeis],
         empresasIds=empresas_ids if isinstance(empresas_ids, list) else [empresas_ids],
-        empresa_ativa=empresa_ativa
+        empresa_ativa=str(empresa_ativa) if empresa_ativa else None
     )
 
 def require_role(*roles: str) -> Callable:
@@ -68,3 +72,7 @@ def require_company(empresa_id: str, current_user: UserContext = Depends(get_cur
     if empresa_id not in current_user.empresasIds:
         raise ForbiddenError(f"Access denied to company {empresa_id}.")
     return current_user
+
+# Alias for compatibility
+require_roles = require_role
+

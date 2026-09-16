@@ -4,7 +4,7 @@
 
 class ApiClient {
   constructor() {
-    this.baseUrl = window.API_BASE_URL || 'http://localhost:8000/api/v1'; // TODO: Configurar variável de ambiente
+    this.baseUrl = window.API_BASE_URL || '/api';
   }
 
   async getHeaders() {
@@ -12,13 +12,16 @@ class ApiClient {
       'Content-Type': 'application/json'
     };
 
-    // Obter Firebase ID Token
-    if (window.auth && window.auth.currentUser) {
+    // Obter JWT Token
+    const token = localStorage.getItem('a7_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else if (window.auth && window.auth.currentUser) {
       try {
-        const token = await window.auth.currentUser.getIdToken(false);
-        headers['Authorization'] = `Bearer ${token}`;
+        const fbToken = await window.auth.currentUser.getIdToken(false);
+        headers['Authorization'] = `Bearer ${fbToken}`;
       } catch(e) {
-        console.error('Erro ao obter token do Firebase', e);
+        console.error('Erro ao obter token', e);
       }
     }
 

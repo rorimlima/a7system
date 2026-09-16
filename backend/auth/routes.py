@@ -4,20 +4,27 @@ API routes for authentication and user management in A7SYSTEM.
 from typing import List, Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
 
+from shared.database import get_db
 from shared.auth_middleware import get_current_user, require_role, UserContext
+from shared.jwt_auth import create_access_token
 from shared.validators import sanitize_string
 from shared.audit import log_action
 from auth.services import (
+    authenticate_user,
     create_user,
     update_user,
     get_user_by_uid,
-    list_users_by_company,
-    refresh_user_claims
+    list_users_by_company
 )
 from shared.errors import ForbiddenError, ValidationError
 
 router = APIRouter()
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    senha: str
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -32,13 +39,47 @@ class UpdateUserRequest(BaseModel):
     empresasIds: Optional[List[str]] = None
     ativo: Optional[bool] = None
 
+@router.post("/login", response_model=dict)
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    """
+    Endpoint de login. Valida email e senha e retorna token JWT.
+    """
+    user = authenticate_user(payload.email, payload.senha, db)
+    if not user:
+        raise ForbiddenError("E-mail ou senha incorretos ou usuário inativo.")
+    
+    empresa_id_str = str(user.empresa_id) if user.empresa_id else None
+    token_data = {
+        "sub": str(user.id),
+        "uid": str(user.id),
+        "email": user.email,
+        "nome": user.nome,
+        "papeis": user.papeis or [],
+        "empresasIds": [empresa_id_str] if empresa_id_str else []
+    }
+    access_token = create_access_token(token_data)
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "uid": str(user.id),
+            "email": user.email,
+            "nome": user.nome,
+            "papeis": user.papeis or [],
+            "empresasIds": [empresa_id_str] if empresa_id_str else [],
+            "empresa_ativa": empresa_id_str
+        }
+    }
+
 @router.post("/register", response_model=dict)
 def register(
     payload: RegisterRequest,
-    current_user: UserContext = Depends(require_role("master"))
+    current_user: UserContext = Depends(require_role("master")),
+    db: Session = Depends(get_db)
 ):
     """
-    Registers a new user. Only accessible by 'master'.
+    Cadastra novo usuário (Apenas 'master').
     """
     if not payload.nome.strip():
         raise ValidationError("O nome não pode ser vazio.")
@@ -50,7 +91,8 @@ def register(
         senha=payload.senha,
         nome=nome_sanitized,
         papeis=payload.papeis,
-        empresas_ids=payload.empresasIds
+        empresas_ids=payload.empresasIds,
+        db=db
     )
     
     log_action(
@@ -62,21 +104,17 @@ def register(
         depois=user_data
     )
     
-    return {
-        "uid": user_data["uid"],
-        "email": user_data["email"],
-        "nome": user_data["nome"],
-        "papeis": user_data["papeis"],
-        "empresasIds": user_data["empresasIds"]
-    }
+    return user_data
 
 @router.get("/me", response_model=dict)
-def get_me(current_user: UserContext = Depends(get_current_user)):
+def get_me(
+    current_user: UserContext = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Returns the currently authenticated user's details.
+    Retorna os detalhes do usuário logado.
     """
-    user_data = get_user_by_uid(current_user.uid)
-    
+    user_data = get_user_by_uid(current_user.uid, db=db)
     return {
         "uid": current_user.uid,
         "email": current_user.email,
@@ -87,20 +125,26 @@ def get_me(current_user: UserContext = Depends(get_current_user)):
     }
 
 @router.get("/users", response_model=List[dict])
-def list_users(current_user: UserContext = Depends(require_role("master", "adm"))):
+def list_users(
+    current_user: UserContext = Depends(require_role("master", "adm")),
+    db: Session = Depends(get_db)
+):
     """
-    Lists users belonging to any of the caller's companies.
+    Lista usuários pertencentes às empresas do usuário autenticado.
     """
-    users = list_users_by_company(current_user.empresasIds)
+    users = list_users_by_company(current_user.empresasIds, db=db)
     return users
 
 @router.get("/users/{uid}", response_model=dict)
-def get_user(uid: str, current_user: UserContext = Depends(require_role("master", "adm"))):
+def get_user(
+    uid: str,
+    current_user: UserContext = Depends(require_role("master", "adm")),
+    db: Session = Depends(get_db)
+):
     """
-    Gets details for a specific user with anti-IDOR checks.
+    Retorna detalhes de um usuário específico.
     """
-    target_user = get_user_by_uid(uid)
-    
+    target_user = get_user_by_uid(uid, db=db)
     target_companies = set(target_user.get("empresasIds", []))
     caller_companies = set(current_user.empresasIds)
     
@@ -113,12 +157,13 @@ def get_user(uid: str, current_user: UserContext = Depends(require_role("master"
 def update_user_details(
     uid: str,
     payload: UpdateUserRequest,
-    current_user: UserContext = Depends(require_role("master"))
+    current_user: UserContext = Depends(require_role("master")),
+    db: Session = Depends(get_db)
 ):
     """
-    Updates a user. Only accessible by 'master'.
+    Atualiza usuário. Apenas 'master'.
     """
-    antes = get_user_by_uid(uid)
+    antes = get_user_by_uid(uid, db=db)
     nome_sanitized = sanitize_string(payload.nome) if payload.nome else None
     
     depois = update_user(
@@ -126,7 +171,8 @@ def update_user_details(
         nome=nome_sanitized,
         papeis=payload.papeis,
         empresas_ids=payload.empresasIds,
-        ativo=payload.ativo
+        ativo=payload.ativo,
+        db=db
     )
     
     log_action(
@@ -139,11 +185,3 @@ def update_user_details(
     )
     
     return depois
-
-@router.post("/users/{uid}/refresh-claims", response_model=dict)
-def force_refresh_claims(uid: str, current_user: UserContext = Depends(require_role("master"))):
-    """
-    Forces a refresh of a user's custom claims.
-    """
-    claims = refresh_user_claims(uid)
-    return claims

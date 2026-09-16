@@ -12,36 +12,59 @@ class AppController {
   }
 
   init() {
-    // Escutar mudanças de autenticação
-    window.auth.onAuthStateChanged(async (user) => {
-      if (user) {
+    // 1. Verifica se há sessão JWT salva
+    const savedToken = localStorage.getItem('a7_token');
+    const savedUserStr = localStorage.getItem('a7_user');
+
+    if (savedToken && savedUserStr) {
+      try {
+        const user = JSON.parse(savedUserStr);
         this.currentUser = user;
-        
-        // Obter Claims
-        const idTokenResult = await user.getIdTokenResult();
-        this.claims = idTokenResult.claims;
-        
+        this.claims = { papeis: user.papeis || [], empresasIds: user.empresasIds || [] };
         this.showApp();
-        await this.loadEmpresas();
+        this.loadEmpresas();
         
-        // Atualizar perfil
-        document.getElementById('user-profile-name').innerText = user.email;
-        
-        // Lidar com refresh do token periodicamente (50 min)
-        this.startTokenRefresh();
-        
-        // Forçar rota caso vazia
-        if(!window.location.hash || window.location.hash === '#/login') {
+        const profileName = document.getElementById('user-profile-name');
+        if (profileName) profileName.innerText = user.nome || user.email;
+
+        if (!window.location.hash || window.location.hash === '#/login') {
           this.navigate('/dashboard');
         } else {
           this.handleRoute();
         }
-      } else {
-        this.currentUser = null;
-        this.claims = null;
-        this.showLogin();
+        return;
+      } catch (e) {
+        this.logout();
       }
-    });
+    }
+
+    // 2. Fallback Firebase Auth se configurado
+    if (window.auth && typeof window.auth.onAuthStateChanged === 'function') {
+      window.auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          this.currentUser = user;
+          const idTokenResult = await user.getIdTokenResult();
+          this.claims = idTokenResult.claims;
+          this.showApp();
+          await this.loadEmpresas();
+          const profileName = document.getElementById('user-profile-name');
+          if (profileName) profileName.innerText = user.email;
+          if (!window.location.hash || window.location.hash === '#/login') {
+            this.navigate('/dashboard');
+          } else {
+            this.handleRoute();
+          }
+        } else {
+          this.currentUser = null;
+          this.claims = null;
+          this.showLogin();
+        }
+      });
+    } else {
+      this.currentUser = null;
+      this.claims = null;
+      this.showLogin();
+    }
 
     // Eventos do formulário de Login (se presente no DOM estático)
     const loginForm = document.getElementById('login-form');
@@ -126,9 +149,15 @@ class AppController {
   }
 
   async logout() {
-    await window.auth.signOut();
+    localStorage.removeItem('a7_token');
+    localStorage.removeItem('a7_user');
     localStorage.removeItem('a7_empresa_ativa');
+    this.currentUser = null;
+    this.claims = null;
     this.empresaAtiva = null;
+    if (window.auth && typeof window.auth.signOut === 'function') {
+      try { await window.auth.signOut(); } catch(e) {}
+    }
     this.showLogin();
   }
 
