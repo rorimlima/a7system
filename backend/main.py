@@ -49,9 +49,17 @@ def health_check() -> dict:
 
 # Include routers
 from auth.routes import router as auth_router
+from companies.routes import router as companies_router
+from companies.fornecedores_routes import router as fornecedores_router
+from companies.clientes_routes import router as clientes_router
+from products.routes import router as products_router
+
 app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
-# app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
-# app.include_router(products.router, prefix="/api/products", tags=["Products"])
+app.include_router(companies_router, prefix="/api/companies", tags=["Companies"])
+app.include_router(fornecedores_router, prefix="/api/fornecedores", tags=["Fornecedores"])
+app.include_router(clientes_router, prefix="/api/clientes", tags=["Clientes"])
+app.include_router(products_router, prefix="/api/products", tags=["Products"])
+
 # app.include_router(purchases.router, prefix="/api/purchases", tags=["Purchases"])
 # app.include_router(sales.router, prefix="/api/sales", tags=["Sales"])
 # app.include_router(crm.router, prefix="/api/crm", tags=["CRM"])

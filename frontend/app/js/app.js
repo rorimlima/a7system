@@ -177,8 +177,33 @@ class AppController {
           this.navigate('/dashboard');
         }
         break;
+      case '/empresas':
+        if (this.hasRole('master') || this.hasRole('adm')) {
+          if (window.EmpresasPage) window.EmpresasPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
+      case '/fornecedores':
+        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
+          if (window.FornecedoresPage) window.FornecedoresPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
       case '/clientes':
+        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('vendedor')) {
+          if (window.ClientesPage) window.ClientesPage.render();
+        } else {
+          this.showToast('Sem permissão.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
       case '/produtos':
+        if (window.ProdutosPage) window.ProdutosPage.render();
+        break;
       case '/vendas':
         // Exemplo genérico de página sendo montada
         contentArea.innerHTML = window.UI.createCard(`Página: ${path.substring(1).toUpperCase()}`, `<p>Módulo em desenvolvimento.</p>`);
