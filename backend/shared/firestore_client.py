@@ -1,6 +1,6 @@
 """
-PostgreSQL-backed Firestore Adapter for A7SYSTEM.
-Provides 100% API compatibility with Firestore functions and objects (collections, documents, queries)
+PostgreSQL Database Adapter for A7SYSTEM.
+Provides a document-style API (collections, documents, queries)
 while persisting everything into PostgreSQL on Supabase.
 """
 import uuid
@@ -11,6 +11,14 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from shared.database import DATABASE_URL
 from shared.errors import NotFoundError, ForbiddenError
+
+# Sentinel for server-side timestamps (replaces firestore.SERVER_TIMESTAMP)
+class _ServerTimestamp:
+    """Sentinel object that resolves to current UTC timestamp when persisted."""
+    def __repr__(self):
+        return "SERVER_TIMESTAMP"
+
+SERVER_TIMESTAMP = _ServerTimestamp()
 
 TABLE_MAP = {
     "empresas": "empresas",
@@ -45,8 +53,7 @@ def serialize_value(val: Any) -> Any:
         return val.isoformat()
     if isinstance(val, uuid.UUID):
         return str(val)
-    if hasattr(val, "__module__") and "firestore" in val.__module__:
-        # Handles firestore.SERVER_TIMESTAMP
+    if isinstance(val, _ServerTimestamp):
         return datetime.now(timezone.utc).isoformat()
     return val
 
@@ -133,7 +140,7 @@ class QueryRef:
 
         target_filter = filter or field_or_filter
         if hasattr(target_filter, "field_path"):
-            # google.cloud.firestore_v1.base_query.FieldFilter
+            # FieldFilter-style object with field_path, op_string, value attributes
             new_q._filters.append((target_filter.field_path, target_filter.op_string, target_filter.value))
         elif op is not None:
             new_q._filters.append((field_or_filter, op, val))

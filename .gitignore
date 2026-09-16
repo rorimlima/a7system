@@ -6,10 +6,6 @@ env/
 .env
 *.pyc
 
-# Firebase
-.firebase/
-firebase-debug.log
-
 # Arquivos gerados e uploads
 *.pdf
 uploads/

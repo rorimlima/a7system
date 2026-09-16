@@ -3,11 +3,13 @@ Serviços para gerenciamento de contas a pagar e parcelas.
 """
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone, timedelta
-from google.cloud import firestore
 
-from shared.firebase_init import get_firestore_client
+from shared.firestore_client import get_firestore_client
 from shared.errors import NotFoundError, ValidationError
 from shared.audit import log_action
+
+def _now_iso():
+    return datetime.now(timezone.utc).isoformat()
 
 def list_contas_a_pagar(empresa_id: str, status: Optional[str] = None, fornecedor_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Lista contas a pagar."""
@@ -39,8 +41,6 @@ def get_conta_a_pagar(empresa_id: str, conta_id: str) -> Dict[str, Any]:
 def get_parcelas_vencendo(empresa_id: str, dias: int = 30) -> List[Dict[str, Any]]:
     """Busca contas que tenham parcelas em aberto e com vencimento nos próximos X dias."""
     db = get_firestore_client()
-    # Para buscas complexas em subitens(array), é melhor carregar os abertos e filtrar em memória
-    # já que Firestore limita queries em arrays de objetos.
     query = db.collection("contasAPagar").where("empresaId", "==", empresa_id).where("status", "==", "emAberto")
     
     hoje = datetime.now().date()
@@ -112,10 +112,9 @@ def get_parcelas_atrasadas(empresa_id: str) -> List[Dict[str, Any]]:
         
     return resultados
 
-@firestore.transactional
-def _baixa_parcela_transaction(transaction, db, empresa_id: str, conta_id: str, parcela_num: int, forma_pagamento: str, juros_multa: float, observacoes: Optional[str], user_id: str) -> Dict[str, Any]:
+def _baixa_parcela_logic(db, empresa_id: str, conta_id: str, parcela_num: int, forma_pagamento: str, juros_multa: float, observacoes: Optional[str], user_id: str) -> Dict[str, Any]:
     doc_ref = db.collection("contasAPagar").document(conta_id)
-    doc = doc_ref.get(transaction=transaction)
+    doc = doc_ref.get()
     
     if not doc.exists:
         raise NotFoundError("Conta a pagar não encontrada.")
@@ -159,21 +158,19 @@ def _baixa_parcela_transaction(transaction, db, empresa_id: str, conta_id: str, 
         "valorPago": round(valor_pago, 2),
         "valorEmAberto": round(valor_em_aberto, 2),
         "status": status_conta,
-        "updatedAt": firestore.SERVER_TIMESTAMP
+        "updatedAt": _now_iso()
     }
     
-    transaction.update(doc_ref, update_data)
+    doc_ref.update(update_data)
     
-    # Retorna o novo estado (em memória) para a view
     nova_data = {**data, **update_data}
     return nova_data
 
 def baixa_parcela(empresa_id: str, conta_id: str, parcela_num: int, forma_pagamento: str, juros_multa: float, observacoes: Optional[str], user_id: str) -> Dict[str, Any]:
-    """Baixa uma parcela via transação e recalcula a conta."""
+    """Baixa uma parcela e recalcula a conta."""
     db = get_firestore_client()
-    transaction = db.transaction()
     
-    resultado = _baixa_parcela_transaction(transaction, db, empresa_id, conta_id, parcela_num, forma_pagamento, juros_multa, observacoes, user_id)
+    resultado = _baixa_parcela_logic(db, empresa_id, conta_id, parcela_num, forma_pagamento, juros_multa, observacoes, user_id)
     
     log_action(empresa_id, user_id, "baixa_parcela_pagar", conta_id, None, {"parcela": parcela_num, "forma": forma_pagamento, "jurosMulta": juros_multa})
     return resultado

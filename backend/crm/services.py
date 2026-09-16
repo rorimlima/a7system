@@ -3,7 +3,6 @@ Serviços do módulo de CRM (Customer Relationship Management).
 """
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
-from google.cloud.firestore_v1.base_query import FieldFilter
 from shared.firestore_client import get_firestore_client
 from shared.errors import A7SystemError
 
@@ -16,8 +15,8 @@ def get_top_clients(empresa_id: str, limit: int = 20) -> List[Dict[str, Any]]:
     """
     vendas_ref = db.collection("vendas")
     # Filtra vendas concluídas da empresa
-    vendas_query = vendas_ref.where(filter=FieldFilter("empresaId", "==", empresa_id))\
-                             .where(filter=FieldFilter("status", "in", ["concluida", "entregue"])).stream()
+    vendas_query = vendas_ref.where("empresaId", "==", empresa_id)\
+                             .where("status", "in", ["concluida", "entregue"]).stream()
     
     agregado = {}
     for venda in vendas_query:
@@ -79,8 +78,8 @@ def get_client_history(empresa_id: str, cliente_id: str) -> Dict[str, Any]:
     # Buscar vendas
     vendas = []
     vendas_query = db.collection("vendas")\
-                     .where(filter=FieldFilter("empresaId", "==", empresa_id))\
-                     .where(filter=FieldFilter("clienteId", "==", cliente_id)).stream()
+                     .where("empresaId", "==", empresa_id)\
+                     .where("clienteId", "==", cliente_id).stream()
                      
     total_gasto = 0.0
     for v_doc in vendas_query:
@@ -101,8 +100,8 @@ def get_client_history(empresa_id: str, cliente_id: str) -> Dict[str, Any]:
     # Buscar recebimentos
     recebimentos = []
     receb_query = db.collection("recebimentos")\
-                    .where(filter=FieldFilter("empresaId", "==", empresa_id))\
-                    .where(filter=FieldFilter("clienteId", "==", cliente_id)).stream()
+                    .where("empresaId", "==", empresa_id)\
+                    .where("clienteId", "==", cliente_id).stream()
                     
     for r_doc in receb_query:
         r = r_doc.to_dict()
@@ -135,7 +134,7 @@ def get_clients_by_region(empresa_id: str) -> List[Dict[str, Any]]:
     """
     Retorna a distribuição de clientes por região.
     """
-    clientes_query = db.collection("clientes").where(filter=FieldFilter("empresaId", "==", empresa_id)).stream()
+    clientes_query = db.collection("clientes").where("empresaId", "==", empresa_id).stream()
     
     regioes = {}
     total = 0
@@ -162,8 +161,8 @@ def get_inactive_clients(empresa_id: str, dias: int = 90) -> List[Dict[str, Any]
     
     # Busca clientes ativos
     clientes_query = db.collection("clientes")\
-                       .where(filter=FieldFilter("empresaId", "==", empresa_id))\
-                       .where(filter=FieldFilter("ativo", "==", True)).stream()
+                       .where("empresaId", "==", empresa_id)\
+                       .where("ativo", "==", True).stream()
                        
     inativos = []
     for c_doc in clientes_query:
@@ -172,8 +171,8 @@ def get_inactive_clients(empresa_id: str, dias: int = 90) -> List[Dict[str, Any]
         
         # Busca a última venda deste cliente
         ultima_venda_query = db.collection("vendas")\
-                               .where(filter=FieldFilter("empresaId", "==", empresa_id))\
-                               .where(filter=FieldFilter("clienteId", "==", c_id))\
+                               .where("empresaId", "==", empresa_id)\
+                               .where("clienteId", "==", c_id)\
                                .order_by("dataVenda", direction="DESCENDING")\
                                .limit(1).stream()
                                
@@ -207,7 +206,7 @@ def get_crm_metrics(empresa_id: str) -> Dict[str, Any]:
     Retorna métricas gerais de CRM.
     """
     # Total de clientes e novos nos últimos 30 dias
-    clientes_query = db.collection("clientes").where(filter=FieldFilter("empresaId", "==", empresa_id)).stream()
+    clientes_query = db.collection("clientes").where("empresaId", "==", empresa_id).stream()
     
     total_clientes = 0
     novos_30_dias = 0
@@ -222,8 +221,8 @@ def get_crm_metrics(empresa_id: str) -> Dict[str, Any]:
     # Ticket médio global (das vendas dos últimos 30 dias, por ex, ou global)
     # Vamos fazer global
     vendas_query = db.collection("vendas")\
-                     .where(filter=FieldFilter("empresaId", "==", empresa_id))\
-                     .where(filter=FieldFilter("status", "in", ["concluida", "entregue"])).stream()
+                     .where("empresaId", "==", empresa_id)\
+                     .where("status", "in", ["concluida", "entregue"]).stream()
                      
     total_receita = 0.0
     qtd_vendas = 0

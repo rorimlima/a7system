@@ -1,7 +1,6 @@
 import random
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
-from firebase_admin import firestore
 from shared.firestore_client import get_db
 from shared.errors import ValidationError, NotFoundError
 
@@ -22,18 +21,15 @@ def generate_unique_order_number(empresa_id: str) -> str:
     
     for _ in range(max_attempts):
         numero = f"A7{random.randint(10000000, 99999999)}"
-        # Verifica se já existe
         docs = vendas_ref.where('empresaId', '==', empresa_id).where('numeroPedido', '==', numero).limit(1).get()
         if len(docs) == 0:
             return numero
             
-    # Fallback se esgotar as tentativas (muito raro)
     return f"A7{random.randint(10000000, 99999999)}"
 
-@firestore.transactional
-def create_sale_transaction(transaction, empresa_id: str, cliente_id: str, itens: List[Dict[str, Any]], user_id: str) -> Dict[str, Any]:
+def create_sale_transaction(empresa_id: str, cliente_id: str, itens: List[Dict[str, Any]], user_id: str) -> Dict[str, Any]:
     """
-    Executa a transação de criação de venda, incluindo:
+    Executa a criação de venda, incluindo:
     - Validação de saldo (leitura)
     - Dedução de estoque de todos os itens (escrita)
     - Criação de movimentações (escrita)
@@ -41,7 +37,7 @@ def create_sale_transaction(transaction, empresa_id: str, cliente_id: str, itens
     """
     db = get_db()
     
-    # 1. Ler todos os produtos envolvidos na transação
+    # 1. Ler todos os produtos envolvidos
     produtos_refs = {}
     produtos_data = {}
     
@@ -51,10 +47,8 @@ def create_sale_transaction(transaction, empresa_id: str, cliente_id: str, itens
             ref = db.collection('produtos').document(produto_id)
             produtos_refs[produto_id] = ref
             
-    # Lemos todos os documentos de uma vez usando get_all ou individualmente dentro da transação
-    # Para @firestore.transactional, precisamos usar transaction.get() para garantir o isolamento
     for p_id, ref in produtos_refs.items():
-        snapshot = ref.get(transaction=transaction)
+        snapshot = ref.get()
         if not snapshot.exists:
             raise ValidationError(f"Produto {p_id} não encontrado.")
         data = snapshot.to_dict()
@@ -69,7 +63,6 @@ def create_sale_transaction(transaction, empresa_id: str, cliente_id: str, itens
         qtd_solicitada = item['quantidade']
         saldo_atual = p_data.get('quantidadeEstoque', 0)
         
-        # Validar saldo (a menos que seja um produto/serviço que não controla estoque)
         controla_estoque = p_data.get('controlarEstoque', True)
         if controla_estoque and saldo_atual < qtd_solicitada:
             raise InsufficientStockError(
@@ -82,7 +75,7 @@ def create_sale_transaction(transaction, empresa_id: str, cliente_id: str, itens
                 }
             )
 
-    # 3. Gerar dados da venda, calcular totais no servidor
+    # 3. Gerar dados da venda
     numero_pedido = generate_unique_order_number(empresa_id)
     agora = datetime.now(timezone.utc)
     
@@ -114,13 +107,11 @@ def create_sale_transaction(transaction, empresa_id: str, cliente_id: str, itens
         }
         itens_processados.append(item_processado)
         
-        # Debitar estoque se controlado
         controla_estoque = p_data.get('controlarEstoque', True)
         if controla_estoque:
             novo_saldo = p_data.get('quantidadeEstoque', 0) - qtd
-            transaction.update(produtos_refs[p_id], {'quantidadeEstoque': novo_saldo, 'dataAtualizacao': agora})
+            produtos_refs[p_id].update({'quantidadeEstoque': novo_saldo, 'dataAtualizacao': agora.isoformat()})
             
-            # Criar movimentação
             mov_ref = db.collection('movimentacoes').document()
             mov_data = {
                 'empresaId': empresa_id,
@@ -131,11 +122,11 @@ def create_sale_transaction(transaction, empresa_id: str, cliente_id: str, itens
                 'documentoReferencia': venda_id,
                 'saldoAnterior': p_data.get('quantidadeEstoque', 0),
                 'saldoNovo': novo_saldo,
-                'dataMovimento': agora,
+                'dataMovimento': agora.isoformat(),
                 'criadoPor': user_id,
-                'dataCriacao': agora
+                'dataCriacao': agora.isoformat()
             }
-            transaction.set(mov_ref, mov_data)
+            mov_ref.set(mov_data)
             
     # 5. Criar o documento da Venda
     venda_data = {
@@ -145,22 +136,20 @@ def create_sale_transaction(transaction, empresa_id: str, cliente_id: str, itens
         'numeroPedido': numero_pedido,
         'itens': itens_processados,
         'valorTotal': total_venda,
-        'status': 'concluida', # status inicial
-        'dataVenda': agora,
+        'status': 'concluida',
+        'dataVenda': agora.isoformat(),
         'criadoPor': user_id,
-        'dataCriacao': agora,
-        'dataAtualizacao': agora
+        'dataCriacao': agora.isoformat(),
+        'dataAtualizacao': agora.isoformat()
     }
     
-    transaction.set(venda_doc_ref, venda_data)
+    venda_doc_ref.set(venda_data)
     
     return venda_data
 
 def create_sale(empresa_id: str, cliente_id: str, itens: List[Dict[str, Any]], user_id: str) -> Dict[str, Any]:
-    """Cria uma nova venda de forma transacional."""
-    db = get_db()
-    transaction = db.transaction()
-    return create_sale_transaction(transaction, empresa_id, cliente_id, itens, user_id)
+    """Cria uma nova venda."""
+    return create_sale_transaction(empresa_id, cliente_id, itens, user_id)
 
 def list_sales(empresa_id: str, data_inicio: Optional[str] = None, data_fim: Optional[str] = None, cliente_id: Optional[str] = None, status: Optional[str] = None) -> List[Dict[str, Any]]:
     """Lista as vendas da empresa com filtros opcionais."""
@@ -172,19 +161,15 @@ def list_sales(empresa_id: str, data_inicio: Optional[str] = None, data_fim: Opt
     if status:
         query = query.where('status', '==', status)
         
-    # Order by dataVenda desc
-    query = query.order_by('dataVenda', direction=firestore.Query.DESCENDING)
+    query = query.order_by('dataVenda', direction='DESCENDING')
     
     docs = query.stream()
     vendas = []
     for doc in docs:
         v_data = doc.to_dict()
         v_data['id'] = doc.id
-        # Filtragem adicional no cliente se precisarmos de ranges complexos não suportados diretamente no index
         vendas.append(v_data)
         
-    # Filtrar por data no Python se não houver index composto adequado, 
-    # idealmente deveria ser via firebase queries mas requer composit indexes.
     if data_inicio or data_fim:
         filtered = []
         for v in vendas:
@@ -219,14 +204,12 @@ def create_recebimento(empresa_id: str, venda_id: str, data: str, forma: str, ob
     """Registra um recebimento para a venda."""
     db = get_db()
     
-    # Validar venda
     venda = get_sale(empresa_id, venda_id)
     cliente_id = venda.get('clienteId')
     
     agora = datetime.now(timezone.utc)
     rec_ref = db.collection('recebimentos').document()
     
-    # Formatar data fornecida ou usar atual
     if not data:
         data_rec = agora
     else:
@@ -240,12 +223,12 @@ def create_recebimento(empresa_id: str, venda_id: str, data: str, forma: str, ob
         'empresaId': empresa_id,
         'vendaId': venda_id,
         'clienteId': cliente_id,
-        'data': data_rec,
+        'data': data_rec.isoformat(),
         'forma': forma,
         'observacoes': observacoes,
         'valor': valor,
         'criadoPor': user_id,
-        'dataCriacao': agora
+        'dataCriacao': agora.isoformat()
     }
     
     rec_ref.set(rec_data)
@@ -255,13 +238,12 @@ def list_recebimentos(empresa_id: str, venda_id: str) -> List[Dict[str, Any]]:
     """Lista todos os recebimentos de uma venda."""
     db = get_db()
     
-    # Validate sale exists and belongs to company
     get_sale(empresa_id, venda_id)
     
     docs = db.collection('recebimentos') \
         .where('empresaId', '==', empresa_id) \
         .where('vendaId', '==', venda_id) \
-        .order_by('data', direction=firestore.Query.DESCENDING) \
+        .order_by('data', direction='DESCENDING') \
         .stream()
         
     return [doc.to_dict() for doc in docs]

@@ -1,5 +1,5 @@
 """
-Authentication and authorization middleware using Firebase Auth.
+Authentication and authorization middleware using Supabase JWT Auth.
 """
 from typing import List, Optional, Callable
 from fastapi import Depends, Request

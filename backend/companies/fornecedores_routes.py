@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Header, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from google.cloud import firestore
+from datetime import datetime, timezone
 
 from shared.auth_middleware import get_current_user, require_role, UserContext
 from shared.validators import sanitize_string, validate_cnpj, validate_cpf, validate_phone
@@ -58,8 +58,8 @@ def api_create_fornecedor(
     if forn_data.get("celular"):
         forn_data["celular"] = validate_phone(forn_data["celular"])
         
-    forn_data["criadoEm"] = firestore.SERVER_TIMESTAMP
-    forn_data["atualizadoEm"] = firestore.SERVER_TIMESTAMP
+    forn_data["criadoEm"] = datetime.now(timezone.utc).isoformat()
+    forn_data["atualizadoEm"] = datetime.now(timezone.utc).isoformat()
     forn_data["ativo"] = True
     
     doc_id = create_document(FORNECEDORES_COLLECTION, forn_data)
@@ -108,7 +108,7 @@ def api_update_fornecedor(
     if "nome" in update_data:
         update_data["nome"] = sanitize_string(update_data["nome"])
         
-    update_data["atualizadoEm"] = firestore.SERVER_TIMESTAMP
+    update_data["atualizadoEm"] = datetime.now(timezone.utc).isoformat()
     update_document(FORNECEDORES_COLLECTION, id, update_data)
     
     depois = get_document(FORNECEDORES_COLLECTION, id)
@@ -128,7 +128,7 @@ def api_delete_fornecedor(
         raise ForbiddenError("Acesso negado.")
         
     # Soft delete
-    update_data = {"ativo": False, "atualizadoEm": firestore.SERVER_TIMESTAMP}
+    update_data = {"ativo": False, "atualizadoEm": datetime.now(timezone.utc).isoformat()}
     update_document(FORNECEDORES_COLLECTION, id, update_data)
     
     depois = get_document(FORNECEDORES_COLLECTION, id)

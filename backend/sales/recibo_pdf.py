@@ -109,7 +109,7 @@ def generate_recibo_pdf(venda_data: dict, empresa_data: dict, cliente_data: dict
     data_venda = venda_data.get("dataVenda", "")
     if isinstance(data_venda, str):
         data_str = data_venda[:10] # YYYY-MM-DD
-    elif hasattr(data_venda, "timestamp"): # datetime ou firestore DatetimeWithNanoseconds
+    elif hasattr(data_venda, "timestamp"): # datetime object
         data_str = data_venda.strftime("%d/%m/%Y %H:%M")
     else:
         data_str = str(data_venda)

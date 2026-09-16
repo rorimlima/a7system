@@ -1,16 +1,16 @@
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from google.cloud import firestore
+from datetime import datetime, timezone
 from shared.firestore_client import create_document, update_document, get_document, list_documents
-from shared.firebase_init import get_storage_bucket
+from shared.storage_service import get_storage_bucket
 from shared.audit import log_action
 
 COMPANIES_COLLECTION = "empresas"
 
 def create_company(data: Dict[str, Any], user_id: str) -> Dict[str, Any]:
     """Cria uma nova empresa."""
-    data["criadoEm"] = firestore.SERVER_TIMESTAMP
-    data["atualizadoEm"] = firestore.SERVER_TIMESTAMP
+    data["criadoEm"] = datetime.now(timezone.utc).isoformat()
+    data["atualizadoEm"] = datetime.now(timezone.utc).isoformat()
     
     company_id = create_document(COMPANIES_COLLECTION, data)
     
@@ -26,7 +26,7 @@ def update_company(company_id: str, data: Dict[str, Any], user_id: str) -> Dict[
     if not antes:
         raise ValueError("Empresa não encontrada.")
         
-    data["atualizadoEm"] = firestore.SERVER_TIMESTAMP
+    data["atualizadoEm"] = datetime.now(timezone.utc).isoformat()
     update_document(COMPANIES_COLLECTION, company_id, data)
     
     depois = get_document(COMPANIES_COLLECTION, company_id)
@@ -43,10 +43,10 @@ def list_companies(empresa_ids: List[str]) -> List[Dict[str, Any]]:
         return []
     
     all_companies = []
-    # Firestore 'in' query supports up to 10 items. Handling chunks if needed, but assuming small list.
+    # Busca em chunks se necessário.
     for i in range(0, len(empresa_ids), 10):
         chunk = empresa_ids[i:i+10]
-        filters = [("id", "in", chunk)] # Assuming document ID filter or a specific field. Actually firestore list_documents doesn't easily filter by document ID via 'in' easily in our wrapper unless supported.
+        filters = [("id", "in", chunk)]
         # Alternatively we can just fetch each one
     
     # Safer: fetch each company document by ID since empresa_ids are document IDs
