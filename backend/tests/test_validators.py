@@ -69,4 +69,4 @@ def test_sanitize_string():
 def test_sanitize_string_empty():
     """Test empty string returns empty."""
     assert sanitize_string("") == ""
-    assert sanitize_string(None) == None
+    assert sanitize_string(None) == ""
