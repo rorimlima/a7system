@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "a7system"
+  },
+  "targets": {
+    "a7system": {
+      "hosting": {
+        "app": [
+          "a7system-app"
+        ],
+        "landing": [
+          "a7system-landing"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A7SYSTEM - Catálogo Digital de Produtos">
+    <meta property="og:title" content="A7SYSTEM - Catálogo de Produtos">
+    <meta property="og:description" content="Navegue pelo nosso catálogo digital de produtos.">
+    <title>A7SYSTEM - Catálogo de Produtos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">A7<span>SYSTEM</span></div>
+            <div class="subtitle">Catálogo Digital de Produtos</div>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Encontre os melhores produtos</h1>
+            <p>Navegue pelo nosso catálogo digital</p>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Buscar produtos...">
+                <button type="button" aria-label="Buscar">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+        <div class="filters">
+            <select id="company-select" aria-label="Selecione a empresa">
+                <option value="">Todas as empresas</option>
+            </select>
+            <select id="sort-select" aria-label="Ordenar por">
+                <option value="name">Nome (A-Z)</option>
+                <option value="price_asc">Preço (Menor-Maior)</option>
+                <option value="price_desc">Preço (Maior-Menor)</option>
+                <option value="recent">Mais recentes</option>
+            </select>
+        </div>
+
+        <div id="loading-landing" class="loading-spinner">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="empty-state-landing" class="empty-state hidden">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <h2>Nenhum produto encontrado</h2>
+            <p>Tente ajustar os filtros ou a busca.</p>
+        </div>
+
+        <div id="products-grid" class="products-grid">
+            <!-- Cards gerados via JS -->
+        </div>
+
+        <div class="pagination-container">
+            <button id="load-more-btn" class="btn-primary hidden">Carregar mais</button>
+        </div>
+    </main>
+
+    <!-- Modal de Produto -->
+    <div id="product-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button id="close-modal" class="close-btn">&times;</button>
+            <div class="modal-body">
+                <div class="modal-gallery">
+                    <img id="modal-main-img" src="" alt="Produto">
+                </div>
+                <div class="modal-info">
+                    <span id="modal-company-badge" class="badge">Empresa</span>
+                    <h2 id="modal-title">Nome do Produto</h2>
+                    <p id="modal-code" class="text-sm text-gray">Código: ---</p>
+                    <div class="modal-pricing">
+                        <span id="modal-price" class="price">R$ 0,00</span>
+                        <span id="modal-old-price" class="old-price hidden">R$ 0,00</span>
+                    </div>
+                    <div class="modal-description">
+                        <h3>Descrição</h3>
+                        <p id="modal-desc">Descrição completa do produto.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">A7<span>SYSTEM</span></div>
+            <p>Plataforma de Gestão Empresarial</p>
+            <p class="copyright">&copy; <span id="current-year"></span> Todos os direitos reservados. Powered by A7SYSTEM.</p>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="js/landing.js"></script>
+</body>
+</html>

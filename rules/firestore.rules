@@ -1,0 +1,129 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // Funções Auxiliares (Helper Functions)
+    // ==========================================
+    
+    // Verifica se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Verifica se o usuário tem um papel específico
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.papeis != null && (role in request.auth.token.papeis);
+    }
+    
+    // Verifica se o usuário pertence a uma empresa específica
+    function belongsToCompany(empresaId) {
+      return isAuthenticated() && request.auth.token.empresasIds != null && (empresaId in request.auth.token.empresasIds);
+    }
+    
+    // Papéis específicos
+    function isMaster() { return hasRole('master'); }
+    function isAdm() { return hasRole('adm'); }
+    function isVendedor() { return hasRole('vendedor'); }
+    function isEstoque() { return hasRole('estoque'); }
+    
+    // Verifica se usuário tem acesso à empresa requerida no documento
+    function hasCompanyAccess(docData) {
+      return belongsToCompany(docData.empresaId);
+    }
+
+    // ==========================================
+    // Regras por Coleção
+    // ==========================================
+
+    // DENY por padrão
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Coleção: Empresas
+    match /empresas/{empresaId} {
+      // Público pode ler empresas visíveis na landing page
+      allow read: if resource.data.visivelNaLanding == true && resource.data.ativa == true;
+      // Autenticado da empresa pode ler seus próprios dados
+      allow read: if belongsToCompany(empresaId);
+      // Apenas MASTER ou ADM podem modificar dados da empresa
+      allow write: if belongsToCompany(empresaId) && (isMaster() || isAdm());
+    }
+    
+    // Coleção: Produtos
+    match /produtos/{produtoId} {
+      // Público pode ver produtos com estoque > 0 de empresas visíveis
+      allow read: if resource.data.quantidadeAtual > 0 
+                  && get(/databases/$(database)/documents/empresas/$(resource.data.empresaId)).data.visivelNaLanding == true
+                  && get(/databases/$(database)/documents/empresas/$(resource.data.empresaId)).data.ativa == true;
+      
+      // Autenticados da empresa podem ler/escrever
+      allow read: if hasCompanyAccess(resource.data);
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isEstoque());
+    }
+
+    // Placeholder para as demais coleções (ativos por fase)
+    
+    // Coleção: Usuarios
+    match /usuarios/{usuarioId} {
+      allow read: if hasCompanyAccess(resource.data);
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm());
+    }
+    
+    // Coleção: Fornecedores
+    match /fornecedores/{fornecedorId} {
+      allow read: if hasCompanyAccess(resource.data);
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isEstoque());
+    }
+    
+    // Coleção: Clientes
+    match /clientes/{clienteId} {
+      allow read: if hasCompanyAccess(resource.data);
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isVendedor());
+    }
+    
+    // Coleção: Compras
+    match /compras/{compraId} {
+      allow read: if hasCompanyAccess(resource.data);
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isEstoque());
+    }
+    
+    // Coleção: Contas a Pagar
+    match /contasAPagar/{contaId} {
+      allow read: if hasCompanyAccess(resource.data) && (isMaster() || isAdm());
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm());
+    }
+    
+    // Coleção: Movimentações (Estoque/Financeiro)
+    match /movimentacoes/{movId} {
+      allow read: if hasCompanyAccess(resource.data);
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm());
+    }
+    
+    // Coleção: Devoluções
+    match /devolucoes/{devId} {
+      allow read: if hasCompanyAccess(resource.data);
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isEstoque() || isVendedor());
+    }
+    
+    // Coleção: Vendas
+    match /vendas/{vendaId} {
+      allow read: if hasCompanyAccess(resource.data);
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isVendedor());
+    }
+    
+    // Coleção: Recebimentos
+    match /recebimentos/{recId} {
+      allow read: if hasCompanyAccess(resource.data) && (isMaster() || isAdm());
+      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm());
+    }
+    
+    // Coleção: Auditoria
+    match /auditoria/{logId} {
+      allow read: if hasCompanyAccess(resource.data) && (isMaster() || isAdm());
+      allow write: if hasCompanyAccess(request.resource.data); // Backend ou roles específicas
+    }
+  }
+}

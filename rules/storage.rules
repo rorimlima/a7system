@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.papeis != null && (role in request.auth.token.papeis);
+    }
+    
+    function belongsToCompany(empresaId) {
+      return isAuthenticated() && request.auth.token.empresasIds != null && (empresaId in request.auth.token.empresasIds);
+    }
+    
+    function isMaster() { return hasRole('master'); }
+    function isAdm() { return hasRole('adm'); }
+    function isEstoque() { return hasRole('estoque'); }
+    
+    function isImageAndValidSize() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp)') 
+             && request.resource.size <= 5 * 1024 * 1024; // max 5MB
+    }
+
+    // Deny by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+    
+    // Logos das Empresas
+    match /logos/{empresaId}/{fileName} {
+      // Leitura: membros da empresa OU público se a empresa for visível
+      allow read: if belongsToCompany(empresaId) 
+                  || (firestore.get(/databases/(default)/documents/empresas/$(empresaId)).data.visivelNaLanding == true);
+                  
+      // Upload: Master ou Adm da empresa
+      allow write: if belongsToCompany(empresaId) 
+                   && (isMaster() || isAdm()) 
+                   && isImageAndValidSize();
+    }
+    
+    // Imagens de Produtos
+    match /produtos/{empresaId}/{fileName} {
+      // Leitura: membros da empresa OU público se a empresa for visível
+      allow read: if belongsToCompany(empresaId) 
+                  || (firestore.get(/databases/(default)/documents/empresas/$(empresaId)).data.visivelNaLanding == true);
+                  
+      // Upload: Adm ou Estoque da empresa
+      allow write: if belongsToCompany(empresaId) 
+                   && (isAdm() || isEstoque()) 
+                   && isImageAndValidSize();
+    }
+  }
+}

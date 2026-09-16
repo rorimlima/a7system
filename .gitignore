@@ -1,0 +1,25 @@
+# Dependências
+node_modules/
+__pycache__/
+venv/
+env/
+.env
+*.pyc
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Arquivos gerados
+*.pdf
+
+# Configurações pessoais e IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Credenciais e tokens
+credentials*.json
+service-account*.json
+*.pem

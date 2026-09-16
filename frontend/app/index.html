@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A7SYSTEM - Gestão Empresarial</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+  <!-- LOADING GLOBAL -->
+  <div id="loading-overlay" class="hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast-container"></div>
+
+  <!-- MODAL GLOBAL -->
+  <div id="modal-overlay">
+    <div class="modal-content" id="modal-content">
+      <!-- Injetado dinamicamente via JS -->
+    </div>
+  </div>
+
+  <!-- TELA DE LOGIN -->
+  <div id="login-container">
+    <div class="card login-card">
+      <div class="card-header" style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="color: var(--color-primary); font-size: 2rem;">A7SYSTEM</h1>
+        <p style="color: var(--color-text-secondary);">Acesso ao Sistema</p>
+      </div>
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">E-mail</label>
+          <input type="email" id="login-email" class="form-control" required placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-senha">Senha</label>
+          <input type="password" id="login-senha" class="form-control" required placeholder="Sua senha">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 1rem;">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ESTRUTURA PRINCIPAL (SPA) -->
+  <div id="app-container" class="hidden">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-logo">A7SYSTEM</div>
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <ul>
+          <li><a href="#/dashboard" class="nav-item" data-path="/dashboard"><span class="nav-icon">📊</span> Dashboard</a></li>
+          <li><a href="#/empresas" class="nav-item" data-path="/empresas"><span class="nav-icon">🏢</span> Empresas</a></li>
+          <li><a href="#/usuarios" class="nav-item" data-path="/usuarios"><span class="nav-icon">👥</span> Usuários</a></li>
+          <li><a href="#/fornecedores" class="nav-item" data-path="/fornecedores"><span class="nav-icon">🚚</span> Fornecedores</a></li>
+          <li><a href="#/clientes" class="nav-item" data-path="/clientes"><span class="nav-icon">🧑‍💼</span> Clientes</a></li>
+          <li><a href="#/produtos" class="nav-item" data-path="/produtos"><span class="nav-icon">📦</span> Produtos</a></li>
+          <li><a href="#/estoque" class="nav-item" data-path="/estoque"><span class="nav-icon">🏭</span> Estoque</a></li>
+          <li><a href="#/compras" class="nav-item" data-path="/compras"><span class="nav-icon">🛒</span> Compras</a></li>
+          <li><a href="#/contas-pagar" class="nav-item" data-path="/contas-pagar"><span class="nav-icon">💸</span> Contas a Pagar</a></li>
+          <li><a href="#/vendas" class="nav-item" data-path="/vendas"><span class="nav-icon">🧾</span> Vendas</a></li>
+          <li><a href="#/recebimentos" class="nav-item" data-path="/recebimentos"><span class="nav-icon">💰</span> Recebimentos</a></li>
+          <li><a href="#/crm" class="nav-item" data-path="/crm"><span class="nav-icon">🤝</span> CRM</a></li>
+          <li><a href="#/devolucoes" class="nav-item" data-path="/devolucoes"><span class="nav-icon">🔄</span> Devoluções</a></li>
+        </ul>
+      </nav>
+      <div class="sidebar-footer">
+        Versão 1.0.0
+      </div>
+    </aside>
+
+    <!-- Content Area -->
+    <div id="main-content">
+      <!-- Top Bar -->
+      <header id="top-bar">
+        <div class="top-bar-left">
+          <button id="mobile-menu-btn" class="btn btn-outline" style="display: none;">☰</button>
+          <div class="empresa-info">
+            <select id="empresa-selector" class="form-control" style="min-width: 200px;">
+              <option value="">Carregando empresas...</option>
+            </select>
+          </div>
+        </div>
+        <div class="top-bar-right">
+          <span id="user-profile-name" style="font-weight: 500;">Usuário</span>
+          <button id="btn-logout" class="btn btn-secondary">Sair</button>
+        </div>
+      </header>
+
+      <!-- Page Content (Dynamic) -->
+      <main id="page-content">
+        <!-- Renderizado via app.js -->
+      </main>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-check-compat.js"></script>
+
+  <!-- Scripts locais -->
+  <script src="js/firebase-config.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/components.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
