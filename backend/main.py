@@ -93,6 +93,24 @@ app.include_router(sales_router, prefix="/api/sales", tags=["Sales"])
 app.include_router(crm_router, prefix="/api/crm", tags=["CRM"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["Dashboard"])
 
+from fastapi.staticfiles import StaticFiles
+
+# Uploads locais
+uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads"))
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
+# Compartilhados do frontend
+frontend_shared = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "shared"))
+if os.path.exists(frontend_shared):
+    app.mount("/shared", StaticFiles(directory=frontend_shared), name="shared")
+
+# SPA do Frontend
+frontend_app = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "app"))
+if os.path.exists(frontend_app):
+    app.mount("/", StaticFiles(directory=frontend_app, html=True), name="frontend")
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", "8080"))
