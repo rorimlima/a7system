@@ -78,11 +78,28 @@ class AppController {
   showApp() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('app-container').classList.remove('hidden');
+
+    // Esconder/mostrar itens do menu baseado em papéis
+    document.querySelectorAll('.nav-item').forEach(el => {
+      const allowedRoles = el.getAttribute('data-roles');
+      if (allowedRoles) {
+        const rolesArr = allowedRoles.split(',');
+        const hasAccess = rolesArr.some(r => this.hasRole(r.trim()));
+        if (!hasAccess) {
+          el.parentElement.style.display = 'none';
+        } else {
+          el.parentElement.style.display = '';
+        }
+      }
+    });
   }
 
   showLogin() {
     document.getElementById('login-container').classList.remove('hidden');
     document.getElementById('app-container').classList.add('hidden');
+    if (window.LoginPage) {
+      window.LoginPage.render();
+    }
     window.location.hash = '#/login';
   }
 
@@ -152,6 +169,14 @@ class AppController {
       case '/dashboard':
         this.renderDashboard();
         break;
+      case '/usuarios':
+        if (this.hasRole('master') || this.hasRole('adm')) {
+          if (window.UsuariosPage) window.UsuariosPage.render();
+        } else {
+          this.showToast('Sem permissão para acessar esta página.', 'error');
+          this.navigate('/dashboard');
+        }
+        break;
       case '/clientes':
       case '/produtos':
       case '/vendas':
@@ -163,28 +188,37 @@ class AppController {
     }
   }
 
+  hasRole(role) {
+    return this.claims && this.claims.papeis && this.claims.papeis.includes(role);
+  }
+
   renderPage(html) {
     document.getElementById('page-content').innerHTML = html;
   }
 
   renderDashboard() {
     const html = `
-      <h2 style="margin-bottom: 1.5rem;">Visão Geral</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="margin: 0;">Visão Geral</h2>
+        <span style="color: #6B7280; font-size: 0.9rem;">Atualizado agora</span>
+      </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-        ${window.UI.createStatsCard('Vendas do Mês', 'R$ 45.230,00', '📈')}
-        ${window.UI.createStatsCard('Clientes Ativos', '124', '👥')}
-        ${window.UI.createStatsCard('Contas a Pagar', 'R$ 12.500,00', '⚠️', 'Vencendo nos próximos 7 dias')}
+        ${window.UI ? window.UI.createStatsCard('Vendas do Mês', 'R$ 84.530,00', '📈', '+15% em relação ao mês anterior') : ''}
+        ${window.UI ? window.UI.createStatsCard('Clientes Ativos', '312', '👥', '+5 novos clientes hoje') : ''}
+        ${window.UI ? window.UI.createStatsCard('Contas a Receber', 'R$ 22.400,00', '💰', 'Recebimentos previstos para hoje') : ''}
+        ${window.UI ? window.UI.createStatsCard('Contas a Pagar', 'R$ 5.200,00', '⚠️', 'Vencendo nos próximos 7 dias') : ''}
       </div>
       
-      <div class="card">
-        <div class="card-header"><h3 class="card-title">Últimas Movimentações</h3></div>
-        ${window.UI.createTable(
+      <div class="card" style="background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem;">
+        <div class="card-header" style="margin-bottom: 1rem;"><h3 class="card-title" style="margin: 0;">Últimas Movimentações</h3></div>
+        ${window.UI ? window.UI.createTable(
           ['Data', 'Descrição', 'Valor', 'Status'],
           [
-            { id: 1, data: ['15/05/2026', 'Venda #1024', 'R$ 1.500,00', window.UI.createBadge('Concluído', 'success')] },
-            { id: 2, data: ['14/05/2026', 'Fornecedor A', 'R$ -300,00', window.UI.createBadge('Pago', 'info')] }
+            { id: 1, data: ['16/09/2026', 'Venda #1042 - Cliente X', 'R$ 2.500,00', window.UI.createBadge('Concluído', 'success')] },
+            { id: 2, data: ['15/09/2026', 'Pagamento Fornecedor Y', 'R$ -1.200,00', window.UI.createBadge('Pago', 'info')] },
+            { id: 3, data: ['15/09/2026', 'Venda #1041 - Cliente Z', 'R$ 450,00', window.UI.createBadge('Pendente', 'warning')] }
           ]
-        )}
+        ) : ''}
       </div>
     `;
     this.renderPage(html);

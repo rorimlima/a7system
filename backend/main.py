@@ -48,8 +48,8 @@ def health_check() -> dict:
     return {"status": "ok", "version": "1.0.0"}
 
 # Include routers
-# from routers import auth, companies, products, purchases, sales, crm, dashboard
-# app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+from auth.routes import router as auth_router
+app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
 # app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
 # app.include_router(products.router, prefix="/api/products", tags=["Products"])
 # app.include_router(purchases.router, prefix="/api/purchases", tags=["Purchases"])
