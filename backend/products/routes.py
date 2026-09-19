@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, Query, Header, UploadFile, File, status
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
-from shared.auth_middleware import get_current_user, require_role, UserContext
+from shared.auth_middleware import (
+    UserContext,
+    ensure_company_access,
+    require_permission,
+)
 from shared.validators import sanitize_string
 from shared.errors import NotFoundError, ForbiddenError, ValidationError
 
@@ -54,10 +58,9 @@ def get_empresa_id(
 @router.post("/", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 def api_create_product(
     data: ProdutoCreate,
-    user: UserContext = Depends(require_role("master", "adm", "estoque"))
+    user: UserContext = Depends(require_permission("produtos:criar"))
 ):
-    if "master" not in user.papeis and data.empresaId not in user.empresasIds:
-        raise ForbiddenError("Você não tem acesso a esta empresa.")
+    ensure_company_access(user, data.empresaId)
         
     prod_data = data.model_dump(exclude_unset=True)
     prod_data["descricao"] = sanitize_string(prod_data["descricao"])
@@ -69,31 +72,28 @@ def api_list_products(
     search: Optional[str] = None,
     # skip: int = 0, limit: int = 50, # Paginacao manual pode ser feita aqui
     empresa_id: str = Depends(get_empresa_id),
-    user: UserContext = Depends(get_current_user)
+    user: UserContext = Depends(require_permission("produtos:ver"))
 ):
-    if "master" not in user.papeis and empresa_id not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, empresa_id)
         
     return list_products(empresa_id, search)
 
 @router.get("/low-stock", response_model=List[Dict[str, Any]])
 def api_low_stock(
     empresa_id: str = Depends(get_empresa_id),
-    user: UserContext = Depends(require_role("master", "adm", "estoque"))
+    user: UserContext = Depends(require_permission("produtos:ver"))
 ):
-    if "master" not in user.papeis and empresa_id not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, empresa_id)
         
     return list_low_stock_products(empresa_id)
 
 @router.get("/{id}", response_model=Dict[str, Any])
-def api_get_product(id: str, user: UserContext = Depends(get_current_user)):
+def api_get_product(id: str, user: UserContext = Depends(require_permission("produtos:ver"))):
     prod = get_product(id)
     if not prod:
         raise NotFoundError("Produto não encontrado.")
         
-    if "master" not in user.papeis and prod.get("empresaId") not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, prod.get("empresaId"))
         
     return prod
 
@@ -101,14 +101,13 @@ def api_get_product(id: str, user: UserContext = Depends(get_current_user)):
 def api_update_product(
     id: str,
     data: ProdutoUpdate,
-    user: UserContext = Depends(require_role("master", "adm", "estoque"))
+    user: UserContext = Depends(require_permission("produtos:editar"))
 ):
     prod = get_product(id)
     if not prod:
         raise NotFoundError("Produto não encontrado.")
         
-    if "master" not in user.papeis and prod.get("empresaId") not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, prod.get("empresaId"))
         
     update_data = data.model_dump(exclude_unset=True)
     if not update_data:
@@ -123,15 +122,14 @@ def api_update_product(
 async def api_upload_photo(
     id: str,
     file: UploadFile = File(...),
-    user: UserContext = Depends(require_role("master", "adm", "estoque"))
+    user: UserContext = Depends(require_permission("produtos:editar"))
 ):
     prod = get_product(id)
     if not prod:
         raise NotFoundError("Produto não encontrado.")
         
     empresa_id = prod.get("empresaId")
-    if "master" not in user.papeis and empresa_id not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, empresa_id)
         
     ext = file.filename.split(".")[-1]
     if ext.lower() not in ["jpg", "jpeg", "png"]:

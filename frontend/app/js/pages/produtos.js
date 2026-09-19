@@ -12,12 +12,12 @@ window.ProdutosPage = (function() {
   const itemsPerPage = 10;
 
   function render() {
-    const isLeitura = !window.appController.hasRole('master') && !window.appController.hasRole('adm') && !window.appController.hasRole('estoque');
+    const podeCriar = window.appController.can('produtos:criar');
     
     let html = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <h2>Gestão de Produtos</h2>
-        ${!isLeitura ? `<button class="btn btn-primary" id="btn-novo-prod">Novo Produto</button>` : ''}
+        ${podeCriar ? `<button class="btn btn-primary" id="btn-novo-prod">Novo Produto</button>` : ''}
       </div>
 
       <div class="card" style="background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -56,7 +56,7 @@ window.ProdutosPage = (function() {
   }
 
   function renderTable() {
-    const isLeitura = !window.appController.hasRole('master') && !window.appController.hasRole('adm') && !window.appController.hasRole('estoque');
+    const podeEditar = window.appController.can('produtos:editar');
     
     const term = document.getElementById('busca-prod').value.toLowerCase();
     const estBaixo = document.getElementById('filtro-estoque-baixo').checked;
@@ -95,7 +95,7 @@ window.ProdutosPage = (function() {
             </td>
             <td style="padding: 12px; text-align: right;">
               <button class="btn btn-outline btn-detalhe-prod" data-id="${p.id}" style="padding: 4px 8px; font-size: 12px;">Detalhes</button>
-              ${!isLeitura ? `<button class="btn btn-outline btn-editar-prod" data-id="${p.id}" style="padding: 4px 8px; font-size: 12px; margin-left: 4px;">Editar</button>` : ''}
+              ${podeEditar ? `<button class="btn btn-outline btn-editar-prod" data-id="${p.id}" style="padding: 4px 8px; font-size: 12px; margin-left: 4px;">Editar</button>` : ''}
             </td>
           </tr>
         `;

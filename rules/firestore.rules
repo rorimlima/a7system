@@ -27,6 +27,25 @@ service cloud.firestore {
     function isAdm() { return hasRole('adm'); }
     function isVendedor() { return hasRole('vendedor'); }
     function isEstoque() { return hasRole('estoque'); }
+
+    // Permissão por módulo ("modulo:acao"), espelhando shared/permissions.py.
+    // O token traz as permissões explícitas do usuário; quando ele não tem
+    // personalização, valem os papéis (checados em seguida pelas regras).
+    function hasPermission(perm) {
+      return isAuthenticated()
+             && request.auth.token.permissoes != null
+             && (perm in request.auth.token.permissoes);
+    }
+
+    // Pode ler o módulo: master, permissão explícita de leitura ou papel legado
+    function canRead(modulo) {
+      return isMaster() || hasPermission(modulo + ':ver');
+    }
+
+    // Pode gravar no módulo: master ou qualquer permissão de escrita do módulo
+    function canWrite(modulo, acao) {
+      return isMaster() || hasPermission(modulo + ':' + acao);
+    }
     
     // Verifica se usuário tem acesso à empresa requerida no documento
     function hasCompanyAccess(docData) {
@@ -49,7 +68,7 @@ service cloud.firestore {
       // Autenticado da empresa pode ler seus próprios dados
       allow read: if belongsToCompany(empresaId);
       // Apenas MASTER ou ADM podem modificar dados da empresa
-      allow write: if belongsToCompany(empresaId) && (isMaster() || isAdm());
+      allow write: if belongsToCompany(empresaId) && (canWrite('empresas', 'editar') || isAdm());
     }
     
     // Coleção: Produtos
@@ -60,69 +79,69 @@ service cloud.firestore {
                   && get(/databases/$(database)/documents/empresas/$(resource.data.empresaId)).data.ativa == true;
       
       // Autenticados da empresa podem ler/escrever
-      allow read: if hasCompanyAccess(resource.data);
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isEstoque());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('produtos') || isAdm() || isEstoque() || isVendedor());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('produtos', 'editar') || isAdm() || isEstoque());
     }
 
     // Placeholder para as demais coleções (ativos por fase)
     
     // Coleção: Usuarios
     match /usuarios/{usuarioId} {
-      allow read: if hasCompanyAccess(resource.data);
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('usuarios') || isAdm());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('usuarios', 'editar') || isAdm());
     }
     
     // Coleção: Fornecedores
     match /fornecedores/{fornecedorId} {
-      allow read: if hasCompanyAccess(resource.data);
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isEstoque());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('fornecedores') || isAdm() || isEstoque());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('fornecedores', 'editar') || isAdm() || isEstoque());
     }
     
     // Coleção: Clientes
     match /clientes/{clienteId} {
-      allow read: if hasCompanyAccess(resource.data);
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isVendedor());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('clientes') || isAdm() || isVendedor());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('clientes', 'editar') || isAdm() || isVendedor());
     }
     
     // Coleção: Compras
     match /compras/{compraId} {
-      allow read: if hasCompanyAccess(resource.data);
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isEstoque());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('compras') || isAdm() || isEstoque());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('compras', 'criar') || isAdm() || isEstoque());
     }
     
     // Coleção: Contas a Pagar
     match /contasAPagar/{contaId} {
-      allow read: if hasCompanyAccess(resource.data) && (isMaster() || isAdm());
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('contas_pagar') || isAdm());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('contas_pagar', 'baixar') || isAdm());
     }
     
     // Coleção: Movimentações (Estoque/Financeiro)
     match /movimentacoes/{movId} {
-      allow read: if hasCompanyAccess(resource.data);
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('estoque') || isAdm() || isEstoque() || isVendedor());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('saidas', 'criar') || isAdm());
     }
     
     // Coleção: Devoluções
     match /devolucoes/{devId} {
-      allow read: if hasCompanyAccess(resource.data);
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isEstoque() || isVendedor());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('devolucoes') || isAdm() || isEstoque());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('devolucoes', 'criar') || isAdm() || isEstoque());
     }
     
     // Coleção: Vendas
     match /vendas/{vendaId} {
-      allow read: if hasCompanyAccess(resource.data);
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm() || isVendedor());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('vendas') || isAdm() || isVendedor() || isEstoque());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('vendas', 'criar') || isAdm() || isVendedor());
     }
     
     // Coleção: Recebimentos
     match /recebimentos/{recId} {
-      allow read: if hasCompanyAccess(resource.data) && (isMaster() || isAdm());
-      allow write: if hasCompanyAccess(request.resource.data) && (isMaster() || isAdm());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('recebimentos') || isAdm());
+      allow write: if hasCompanyAccess(request.resource.data) && (canWrite('recebimentos', 'criar') || isAdm());
     }
     
     // Coleção: Auditoria
     match /auditoria/{logId} {
-      allow read: if hasCompanyAccess(resource.data) && (isMaster() || isAdm());
+      allow read: if hasCompanyAccess(resource.data) && (canRead('dashboard') || isAdm());
       allow write: if hasCompanyAccess(request.resource.data); // Backend ou roles específicas
     }
   }

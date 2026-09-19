@@ -81,11 +81,13 @@ const LoginPage = {
         }
 
         if (window.appController) {
-          window.appController.currentUser = data.user;
-          window.appController.claims = { papeis: data.user.papeis || [], empresasIds: data.user.empresasIds || [] };
+          // Guarda papéis e permissões efetivas e remonta o menu por módulo
+          window.appController.setSession(data.user);
           window.appController.showApp();
+          await window.appController.loadEmpresas();
           window.appController.showToast('Login efetuado com sucesso!', 'success');
-          window.appController.navigate('/dashboard');
+          await window.appController.startRouting();
+          window.appController.navigate(window.appController.rotaInicial());
         }
       } catch (err) {
         const msg = err.message || 'Erro ao acessar o sistema.';

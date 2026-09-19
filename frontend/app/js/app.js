@@ -1,5 +1,10 @@
 /**
  * A7SYSTEM - Controlador Principal e Router da SPA
+ *
+ * O app é modular: menu, rotas e telas saem do catálogo em
+ * `frontend/shared/permissions.js` (espelho de `backend/shared/permissions.py`).
+ * Cada módulo tem a permissão `modulo:acao` que o backend também exige, então
+ * esconder um item aqui nunca é a única barreira — é só a camada de usabilidade.
  */
 
 class AppController {
@@ -7,7 +12,8 @@ class AppController {
     this.currentUser = null;
     this.empresaAtiva = localStorage.getItem('a7_empresa_ativa');
     this.claims = null;
-    
+    this.permissoes = [];
+
     this.init();
   }
 
@@ -19,19 +25,15 @@ class AppController {
     if (savedToken && savedUserStr) {
       try {
         const user = JSON.parse(savedUserStr);
-        this.currentUser = user;
-        this.claims = { papeis: user.papeis || [], empresasIds: user.empresasIds || [] };
+        this.setSession(user);
         this.showApp();
         this.loadEmpresas();
-        
+
         const profileName = document.getElementById('user-profile-name');
         if (profileName) profileName.innerText = user.nome || user.email;
 
-        if (!window.location.hash || window.location.hash === '#/login') {
-          this.navigate('/dashboard');
-        } else {
-          this.handleRoute();
-        }
+        this.bindEventos();
+        this.startRouting();
         return;
       } catch (e) {
         this.logout();
@@ -44,28 +46,67 @@ class AppController {
         if (user) {
           this.currentUser = user;
           const idTokenResult = await user.getIdTokenResult();
-          this.claims = idTokenResult.claims;
+          this.setSession({
+            nome: user.email,
+            email: user.email,
+            papeis: idTokenResult.claims.papeis || [],
+            permissoes: idTokenResult.claims.permissoes || null,
+            empresasIds: idTokenResult.claims.empresasIds || []
+          });
           this.showApp();
           await this.loadEmpresas();
           const profileName = document.getElementById('user-profile-name');
           if (profileName) profileName.innerText = user.email;
-          if (!window.location.hash || window.location.hash === '#/login') {
-            this.navigate('/dashboard');
-          } else {
-            this.handleRoute();
-          }
+          this.startRouting();
         } else {
           this.currentUser = null;
           this.claims = null;
+          this.permissoes = [];
           this.showLogin();
         }
       });
     } else {
       this.currentUser = null;
       this.claims = null;
+      this.permissoes = [];
       this.showLogin();
     }
 
+    this.bindEventos();
+  }
+
+  /**
+   * Guarda usuário, papéis e permissões efetivas da sessão.
+   * Sessões antigas (sem `permissoes`) caem nos presets dos papéis, igual ao backend.
+   */
+  setSession(user) {
+    this.currentUser = user;
+    const papeis = user.papeis || [];
+    let permissoes = user.permissoes;
+    if (!Array.isArray(permissoes) || permissoes.length === 0) {
+      permissoes = window.Permissoes ? window.Permissoes.permissoesDosPapeis(papeis) : [];
+    }
+    this.permissoes = permissoes;
+    this.claims = { papeis, permissoes, empresasIds: user.empresasIds || [] };
+  }
+
+  /** Carrega o catálogo do backend e só então monta menu e rota inicial. */
+  async startRouting() {
+    if (window.Permissoes && !window.Permissoes.carregado) {
+      await window.Permissoes.carregar();
+      // O catálogo pode ter chegado depois da sessão: recalcula os presets.
+      if (this.currentUser) this.setSession(this.currentUser);
+    }
+    this.buildMenu();
+
+    if (!window.location.hash || window.location.hash === '#/login') {
+      this.navigate(this.rotaInicial());
+    } else {
+      this.handleRoute();
+    }
+  }
+
+  bindEventos() {
     // Eventos do formulário de Login (se presente no DOM estático)
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
@@ -73,7 +114,7 @@ class AppController {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
         const senha = document.getElementById('login-senha').value;
-        
+
         this.showLoading();
         try {
           await window.auth.signInWithEmailAndPassword(email, senha);
@@ -120,23 +161,81 @@ class AppController {
     window.addEventListener('hashchange', () => this.handleRoute());
   }
 
+  // ==== Permissões =========================================================
+
+  /** Papel do usuário (use `can()` para decidir acesso a funcionalidade). */
+  hasRole(role) {
+    return !!(this.claims && this.claims.papeis && this.claims.papeis.includes(role));
+  }
+
+  /** O usuário possui a permissão `modulo:acao`? */
+  can(codigo) {
+    return Array.isArray(this.permissoes) && this.permissoes.includes(codigo);
+  }
+
+  /** O usuário possui ao menos uma das permissões informadas? */
+  canAny(...codigos) {
+    return codigos.some(c => this.can(c));
+  }
+
+  /** O usuário pode abrir o módulo (tem a ação `ver`)? */
+  canModule(moduloId) {
+    return this.can(`${moduloId}:ver`);
+  }
+
+  /** Módulos visíveis para o usuário, na ordem do menu. */
+  modulosDisponiveis() {
+    if (!window.Permissoes) return [];
+    return window.Permissoes.modulos.filter(m => this.canModule(m.id));
+  }
+
+  /** Primeira rota que o usuário pode abrir (evita cair numa tela proibida). */
+  rotaInicial() {
+    const modulos = this.modulosDisponiveis();
+    return modulos.length ? modulos[0].rota : '/sem-acesso';
+  }
+
+  // ==== Menu e rotas =======================================================
+
+  /** Monta o menu lateral a partir dos módulos permitidos. */
+  buildMenu() {
+    const lista = document.getElementById('sidebar-nav-list');
+    if (!lista) return;
+
+    const modulos = this.modulosDisponiveis();
+    if (!modulos.length) {
+      lista.innerHTML = '<li class="nav-empty">Nenhum módulo liberado para o seu usuário.</li>';
+      return;
+    }
+
+    lista.innerHTML = modulos.map(m => `
+      <li>
+        <a href="#${m.rota}" class="nav-item" data-path="${m.rota}" data-modulo="${m.id}" title="${m.descricao || m.nome}">
+          <span class="nav-icon">${m.icone || '•'}</span> ${m.nome}
+        </a>
+      </li>
+    `).join('');
+
+    // Fechar o drawer ao navegar em telas menores
+    lista.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        if (window.innerWidth < 1025) this.closeSidebar();
+      });
+    });
+
+    this.highlightMenu(window.location.hash.replace('#', ''));
+  }
+
+  highlightMenu(path) {
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.getAttribute('data-path') === path);
+    });
+  }
+
   showApp() {
     document.getElementById('login-container').classList.add('hidden');
     document.getElementById('app-container').classList.remove('hidden');
-
-    // Esconder/mostrar itens do menu baseado em papéis
-    document.querySelectorAll('.nav-item').forEach(el => {
-      const allowedRoles = el.getAttribute('data-roles');
-      if (allowedRoles) {
-        const rolesArr = allowedRoles.split(',');
-        const hasAccess = rolesArr.some(r => this.hasRole(r.trim()));
-        if (!hasAccess) {
-          el.parentElement.style.display = 'none';
-        } else {
-          el.parentElement.style.display = '';
-        }
-      }
-    });
+    this.buildMenu();
   }
 
   showLogin() {
@@ -154,37 +253,54 @@ class AppController {
     localStorage.removeItem('a7_empresa_ativa');
     this.currentUser = null;
     this.claims = null;
+    this.permissoes = [];
     this.empresaAtiva = null;
     if (window.auth && typeof window.auth.signOut === 'function') {
-      try { await window.auth.signOut(); } catch(e) {}
+      try { await window.auth.signOut(); } catch (e) {}
     }
     this.showLogin();
   }
 
   async loadEmpresas() {
-    // Placeholder para carregar empresas baseadas nos claims ou API
-    // Se fossem claims: this.claims.empresasIds
     const select = document.getElementById('empresa-selector');
-    
-    // Mock carregamento - na real chamaria a API ou leria firestore
-    try {
-      // Exemplo API call: const empresas = await window.api.get('/empresas/minhas');
-      const empresas = [
-        { id: 'emp_1', nome: 'A7SYSTEM - Matriz' },
-        { id: 'emp_2', nome: 'A7SYSTEM - Filial 1' }
-      ];
+    if (!select) return;
 
-      select.innerHTML = empresas.map(emp => 
+    try {
+      const empresas = await window.api.get('/companies/');
+      const lista = (Array.isArray(empresas) ? empresas : []).map(emp => ({
+        id: emp.id || emp.uid,
+        nome: emp.nomeFantasia || emp.nome || emp.razaoSocial || emp.id
+      }));
+
+      if (!lista.length) {
+        select.innerHTML = '<option value="">Nenhuma empresa disponível</option>';
+        return;
+      }
+
+      select.innerHTML = lista.map(emp =>
         `<option value="${emp.id}" ${this.empresaAtiva === emp.id ? 'selected' : ''}>${emp.nome}</option>`
       ).join('');
 
-      if (!this.empresaAtiva && empresas.length > 0) {
-        this.empresaAtiva = empresas[0].id;
+      if (!this.empresaAtiva || !lista.some(e => e.id === this.empresaAtiva)) {
+        this.empresaAtiva = lista[0].id;
         localStorage.setItem('a7_empresa_ativa', this.empresaAtiva);
+        select.value = this.empresaAtiva;
       }
-    } catch(err) {
+    } catch (err) {
       console.error(err);
-      select.innerHTML = '<option value="">Erro ao carregar</option>';
+      // Sem permissão em Empresas ainda é possível operar com a empresa do login
+      const doUsuario = (this.claims && this.claims.empresasIds) || [];
+      if (doUsuario.length) {
+        select.innerHTML = doUsuario.map(id =>
+          `<option value="${id}" ${this.empresaAtiva === id ? 'selected' : ''}>${id}</option>`
+        ).join('');
+        if (!this.empresaAtiva) {
+          this.empresaAtiva = doUsuario[0];
+          localStorage.setItem('a7_empresa_ativa', this.empresaAtiva);
+        }
+      } else {
+        select.innerHTML = '<option value="">Erro ao carregar</option>';
+      }
     }
   }
 
@@ -192,157 +308,58 @@ class AppController {
     window.location.hash = '#' + path;
   }
 
+  /**
+   * Roteador: cada rota é um módulo do catálogo e exige `modulo:ver`.
+   * Sem permissão, o usuário é levado ao primeiro módulo a que tem acesso.
+   */
   handleRoute() {
-    if(!this.currentUser) return;
+    if (!this.currentUser) return;
 
     // No mobile, fecha o sidebar drawer ao navegar
     if (window.innerWidth < 1025) {
       this.closeSidebar();
     }
 
-    const hash = window.location.hash || '#/dashboard';
+    const hash = window.location.hash || '#' + this.rotaInicial();
     const path = hash.replace('#', '');
-    
-    // Highlight nav item
-    document.querySelectorAll('.nav-item').forEach(el => {
-      el.classList.remove('active');
-      if (el.getAttribute('data-path') === path) {
-        el.classList.add('active');
-      }
-    });
 
-    // Validar empresa ativa
-    if (!this.empresaAtiva && path !== '/empresas') {
+    this.highlightMenu(path);
+
+    const contentArea = document.getElementById('page-content');
+    const modulo = window.Permissoes ? window.Permissoes.getModuloPorRota(path) : null;
+
+    if (!modulo) {
+      contentArea.innerHTML = this.modulosDisponiveis().length
+        ? `<h2>404 - Página não encontrada</h2>`
+        : `<h2>Sem acesso</h2><p>Nenhum módulo foi liberado para o seu usuário. Procure um administrador.</p>`;
+      return;
+    }
+
+    if (!this.canModule(modulo.id)) {
+      this.showToast(`Sem permissão para acessar ${modulo.nome}.`, 'error');
+      const destino = this.rotaInicial();
+      if (destino !== path) this.navigate(destino);
+      return;
+    }
+
+    // Validar empresa ativa (Empresas é a única tela utilizável sem escopo)
+    if (!this.empresaAtiva && modulo.id !== 'empresas') {
       this.renderPage('Por favor, selecione uma empresa no topo para continuar.');
       return;
     }
 
-    // Roteador simples
-    const contentArea = document.getElementById('page-content');
-    contentArea.innerHTML = `<div style="text-align: center; padding: 2rem;">Carregando...</div>`;
-
-    switch(path) {
-      case '/dashboard':
-        this.renderDashboard();
-        break;
-      case '/usuarios':
-        if (this.hasRole('master') || this.hasRole('adm')) {
-          if (window.UsuariosPage) window.UsuariosPage.render();
-        } else {
-          this.showToast('Sem permissão para acessar esta página.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/empresas':
-        if (this.hasRole('master') || this.hasRole('adm')) {
-          if (window.EmpresasPage) window.EmpresasPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/fornecedores':
-        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
-          if (window.FornecedoresPage) window.FornecedoresPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/clientes':
-        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('vendedor')) {
-          if (window.ClientesPage) window.ClientesPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/produtos':
-        if (window.ProdutosPage) window.ProdutosPage.render();
-        break;
-      case '/estoque':
-        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
-          if (window.EstoquePage) window.EstoquePage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/saidas':
-        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
-          if (window.SaidasPage) window.SaidasPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/devolucoes':
-        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
-          if (window.DevolucoesPage) window.DevolucoesPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/compras':
-        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('estoque')) {
-          if (window.ComprasPage) window.ComprasPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/contas-pagar':
-        if (this.hasRole('master') || this.hasRole('adm')) {
-          if (window.ContasPagarPage) window.ContasPagarPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/vendas':
-        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('vendedor')) {
-          if (window.VendasPage) window.VendasPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/recebimentos':
-        if (this.hasRole('master') || this.hasRole('adm')) {
-          if (window.RecebimentosPage) window.RecebimentosPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      case '/crm':
-        if (this.hasRole('master') || this.hasRole('adm') || this.hasRole('vendedor')) {
-          if (window.CrmPage) window.CrmPage.render();
-        } else {
-          this.showToast('Sem permissão.', 'error');
-          this.navigate('/dashboard');
-        }
-        break;
-      default:
-        contentArea.innerHTML = `<h2>404 - Página não encontrada</h2>`;
+    const page = window[modulo.pagina];
+    if (!page || typeof page.render !== 'function') {
+      contentArea.innerHTML = `<h2>${modulo.nome} temporariamente indisponível.</h2>`;
+      return;
     }
-  }
 
-  hasRole(role) {
-    return this.claims && this.claims.papeis && this.claims.papeis.includes(role);
+    contentArea.innerHTML = `<div style="text-align: center; padding: 2rem;">Carregando...</div>`;
+    page.render();
   }
 
   renderPage(html) {
     document.getElementById('page-content').innerHTML = html;
-  }
-
-  renderDashboard() {
-    if (window.DashboardPage) {
-      window.DashboardPage.render();
-    } else {
-      this.renderPage('<h2>Dashboard temporariamente indisponível.</h2>');
-    }
   }
 
   // ==== Métodos de Controle do Menu Mobile (Drawer) ====
@@ -369,15 +386,6 @@ class AppController {
         this.closeSidebar();
         this.closeModal();
       }
-    });
-
-    // Fechar ao clicar em itens de navegação em viewports menores
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.addEventListener('click', () => {
-        if (window.innerWidth < 1025) {
-          this.closeSidebar();
-        }
-      });
     });
   }
 
@@ -432,16 +440,6 @@ class AppController {
 
   closeModal() {
     document.getElementById('modal-overlay').classList.remove('active');
-  }
-
-  startTokenRefresh() {
-    // Auto atualiza token a cada 50 minutos (3000000 ms) para evitar expiração em sessões ativas
-    setInterval(async () => {
-      if (this.currentUser) {
-        await this.currentUser.getIdToken(true);
-        console.log("Token renovado preventivamente.");
-      }
-    }, 3000000);
   }
 }
 

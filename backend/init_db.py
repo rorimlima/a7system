@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(255) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
     papeis TEXT[] DEFAULT ARRAY['vendedor'],
+    permissoes TEXT[] DEFAULT ARRAY[]::TEXT[],
     ativo BOOLEAN DEFAULT TRUE,
     criado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -212,6 +213,12 @@ def init_database():
     for t in tabelas:
         cur.execute(f"ALTER TABLE {t} ADD COLUMN IF NOT EXISTS dados JSONB DEFAULT '{{}}'::jsonb;")
     print("Colunas 'dados JSONB' verificadas!")
+
+    # Migração: permissões por módulo nos usuários já existentes
+    cur.execute(
+        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS permissoes TEXT[] DEFAULT ARRAY[]::TEXT[];"
+    )
+    print("Coluna 'usuarios.permissoes' verificada!")
 
     
     # 1. Cria ou recupera Empresa Padrão

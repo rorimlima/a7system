@@ -4,7 +4,11 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import io
 
-from auth.auth_middleware import get_current_user_with_roles
+from shared.auth_middleware import (
+    UserContext,
+    ensure_company_access,
+    require_permission,
+)
 from shared.firestore_client import get_db
 from shared.errors import NotFoundError, ValidationError
 
@@ -39,15 +43,16 @@ class RecebimentoRequest(BaseModel):
     valor: float = Field(gt=0)
 
 @router.post("/")
-def fechar_venda(request: VendaRequest, user: dict = Depends(get_current_user_with_roles(["master", "adm", "vendedor"]))):
+def fechar_venda(
+    request: VendaRequest,
+    user: UserContext = Depends(require_permission("vendas:criar"))
+):
     """
     Registra uma nova venda. 
     Verifica saldo, debita estoque transacionalmente e cria movimentações.
     """
-    empresa_id = request.empresaId
-    if empresa_id not in user.get('empresasIds', []):
-        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa.")
-        
+    empresa_id = ensure_company_access(user, request.empresaId)
+    
     if not request.itens:
         raise HTTPException(status_code=400, detail="A venda deve conter pelo menos um item.")
         
@@ -58,7 +63,7 @@ def fechar_venda(request: VendaRequest, user: dict = Depends(get_current_user_wi
             empresa_id=empresa_id,
             cliente_id=request.clienteId,
             itens=itens_dict,
-            user_id=user['uid']
+            user_id=user.uid
         )
         return {"message": "Venda concluída com sucesso.", "venda": nova_venda}
         
@@ -76,21 +81,23 @@ def listar_vendas(
     dataFim: Optional[str] = Query(None),
     clienteId: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
-    user: dict = Depends(get_current_user_with_roles(["master", "adm", "vendedor", "estoque"]))
+    user: UserContext = Depends(require_permission("vendas:ver"))
 ):
     """Lista as vendas da empresa."""
-    if empresaId not in user.get('empresasIds', []):
-        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa.")
-        
+    ensure_company_access(user, empresaId)
+    
     vendas = list_sales(empresaId, dataInicio, dataFim, clienteId, status)
     return vendas
 
 @router.get("/{id}")
-def detalhe_venda(id: str, empresaId: str, user: dict = Depends(get_current_user_with_roles(["master", "adm", "vendedor", "estoque"]))):
+def detalhe_venda(
+    id: str,
+    empresaId: str,
+    user: UserContext = Depends(require_permission("vendas:ver"))
+):
     """Detalhes de uma venda específica."""
-    if empresaId not in user.get('empresasIds', []):
-        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa.")
-        
+    ensure_company_access(user, empresaId)
+    
     try:
         venda = get_sale(empresaId, id)
         return venda
@@ -98,11 +105,15 @@ def detalhe_venda(id: str, empresaId: str, user: dict = Depends(get_current_user
         raise HTTPException(status_code=404, detail=str(e))
 
 @router.post("/{id}/recebimento")
-def registrar_recebimento(id: str, request: RecebimentoRequest, empresaId: str = Query(...), user: dict = Depends(get_current_user_with_roles(["master", "adm", "vendedor"]))):
+def registrar_recebimento(
+    id: str,
+    request: RecebimentoRequest,
+    empresaId: str = Query(...),
+    user: UserContext = Depends(require_permission("recebimentos:criar"))
+):
     """Registra um recebimento para a venda."""
-    if empresaId not in user.get('empresasIds', []):
-        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa.")
-        
+    ensure_company_access(user, empresaId)
+    
     try:
         rec = create_recebimento(
             empresa_id=empresaId,
@@ -111,7 +122,7 @@ def registrar_recebimento(id: str, request: RecebimentoRequest, empresaId: str =
             forma=request.forma,
             observacoes=request.observacoes,
             valor=request.valor,
-            user_id=user['uid']
+            user_id=user.uid
         )
         return {"message": "Recebimento registrado com sucesso.", "recebimento": rec}
     except NotFoundError as e:
@@ -120,11 +131,14 @@ def registrar_recebimento(id: str, request: RecebimentoRequest, empresaId: str =
         raise HTTPException(status_code=500, detail=f"Erro ao registrar recebimento: {str(e)}")
 
 @router.get("/{id}/recebimentos")
-def listar_recebimentos_venda(id: str, empresaId: str = Query(...), user: dict = Depends(get_current_user_with_roles(["master", "adm", "vendedor", "estoque"]))):
+def listar_recebimentos_venda(
+    id: str,
+    empresaId: str = Query(...),
+    user: UserContext = Depends(require_permission("recebimentos:ver"))
+):
     """Lista todos os recebimentos de uma venda."""
-    if empresaId not in user.get('empresasIds', []):
-        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa.")
-        
+    ensure_company_access(user, empresaId)
+    
     try:
         recs = list_recebimentos(empresaId, id)
         return recs
@@ -132,11 +146,14 @@ def listar_recebimentos_venda(id: str, empresaId: str = Query(...), user: dict =
         raise HTTPException(status_code=404, detail=str(e))
 
 @router.get("/{id}/recibo")
-def gerar_recibo_pdf(id: str, empresaId: str = Query(...), user: dict = Depends(get_current_user_with_roles(["master", "adm", "vendedor"]))):
+def gerar_recibo_pdf(
+    id: str,
+    empresaId: str = Query(...),
+    user: UserContext = Depends(require_permission("vendas:ver"))
+):
     """Gera o recibo da venda em PDF."""
-    if empresaId not in user.get('empresasIds', []):
-        raise HTTPException(status_code=403, detail="Sem acesso a esta empresa.")
-        
+    ensure_company_access(user, empresaId)
+    
     try:
         db = get_db()
         venda = get_sale(empresaId, id)

@@ -10,8 +10,8 @@ window.EmpresasPage = (function() {
   ];
 
   function render() {
-    const isMaster = window.appController.hasRole('master');
-    const btnNova = isMaster ? `<button class="btn btn-primary" id="btn-nova-empresa">Nova Empresa</button>` : '';
+    const podeCriar = window.appController.can('empresas:criar');
+    const btnNova = podeCriar ? `<button class="btn btn-primary" id="btn-nova-empresa">Nova Empresa</button>` : '';
     
     let html = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
@@ -64,9 +64,7 @@ window.EmpresasPage = (function() {
   }
 
   function bindEvents() {
-    const isMaster = window.appController.hasRole('master');
-    
-    if (isMaster) {
+    if (window.appController.can('empresas:criar')) {
       const btnNova = document.getElementById('btn-nova-empresa');
       if (btnNova) btnNova.addEventListener('click', () => openModal());
     }

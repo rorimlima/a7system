@@ -3,7 +3,11 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 
-from shared.auth_middleware import get_current_user, require_role, UserContext
+from shared.auth_middleware import (
+    UserContext,
+    ensure_company_access,
+    require_permission,
+)
 from shared.validators import sanitize_string, validate_cnpj, validate_cpf
 from shared.errors import NotFoundError, ForbiddenError, ValidationError, ConflictError
 from shared.firestore_client import create_document, update_document, get_document, list_documents
@@ -45,10 +49,9 @@ def get_empresa_id(
 @router.post("/", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 def api_create_cliente(
     data: ClienteCreate,
-    user: UserContext = Depends(require_role("master", "adm", "vendedor"))
+    user: UserContext = Depends(require_permission("clientes:criar"))
 ):
-    if "master" not in user.papeis and data.empresaId not in user.empresasIds:
-        raise ForbiddenError("Você não tem acesso a esta empresa.")
+    ensure_company_access(user, data.empresaId)
         
     cli_data = data.model_dump(exclude_unset=True)
     cli_data["nome"] = sanitize_string(cli_data["nome"])
@@ -71,21 +74,19 @@ def api_create_cliente(
 @router.get("/", response_model=List[Dict[str, Any]])
 def api_list_clientes(
     empresa_id: str = Depends(get_empresa_id),
-    user: UserContext = Depends(get_current_user)
+    user: UserContext = Depends(require_permission("clientes:ver"))
 ):
-    if "master" not in user.papeis and empresa_id not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, empresa_id)
         
     return list_documents(CLIENTES_COLLECTION, filters=[("empresaId", "==", empresa_id), ("ativo", "==", True)])
 
 @router.get("/{id}", response_model=Dict[str, Any])
-def api_get_cliente(id: str, user: UserContext = Depends(get_current_user)):
+def api_get_cliente(id: str, user: UserContext = Depends(require_permission("clientes:ver"))):
     cli = get_document(CLIENTES_COLLECTION, id)
     if not cli:
         raise NotFoundError("Cliente não encontrado.")
         
-    if "master" not in user.papeis and cli.get("empresaId") not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, cli.get("empresaId"))
         
     # TODO: add historico if required
     return cli
@@ -94,14 +95,13 @@ def api_get_cliente(id: str, user: UserContext = Depends(get_current_user)):
 def api_update_cliente(
     id: str,
     data: ClienteUpdate,
-    user: UserContext = Depends(require_role("master", "adm", "vendedor"))
+    user: UserContext = Depends(require_permission("clientes:editar"))
 ):
     cli = get_document(CLIENTES_COLLECTION, id)
     if not cli:
         raise NotFoundError("Cliente não encontrado.")
         
-    if "master" not in user.papeis and cli.get("empresaId") not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, cli.get("empresaId"))
         
     update_data = data.model_dump(exclude_unset=True)
     if not update_data:
@@ -120,14 +120,13 @@ def api_update_cliente(
 @router.delete("/{id}")
 def api_delete_cliente(
     id: str,
-    user: UserContext = Depends(require_role("master", "adm"))
+    user: UserContext = Depends(require_permission("clientes:excluir"))
 ):
     cli = get_document(CLIENTES_COLLECTION, id)
     if not cli:
         raise NotFoundError("Cliente não encontrado.")
         
-    if "master" not in user.papeis and cli.get("empresaId") not in user.empresasIds:
-        raise ForbiddenError("Acesso negado.")
+    ensure_company_access(user, cli.get("empresaId"))
         
     # check for vendas
     vendas = list_documents(VENDAS_COLLECTION, filters=[("clienteId", "==", id)], limit=1)

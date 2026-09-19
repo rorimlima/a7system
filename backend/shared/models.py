@@ -43,6 +43,9 @@ class Usuario(Base):
     email = Column(String(255), unique=True, nullable=False)
     senha_hash = Column(String(255), nullable=False)
     papeis = Column(ARRAY(String), default=["vendedor"])
+    # Permissões explícitas por módulo ("modulo:acao"). Quando preenchidas,
+    # substituem os presets dos papéis (ver shared/permissions.py).
+    permissoes = Column(ARRAY(String), default=[])
     ativo = Column(Boolean, default=True)
     criado_em = Column(DateTime(timezone=True), default=datetime.utcnow)
     atualizado_em = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -9,6 +9,29 @@ from sqlalchemy.orm import Session
 from shared.models import Usuario, Empresa
 from shared.jwt_auth import hash_password, verify_password
 from shared.errors import ValidationError, NotFoundError, ConflictError
+from shared.permissions import resolve_permissions, validar_permissoes
+
+
+def serialize_user(user: Usuario) -> Dict[str, Any]:
+    """
+    Serializa o usuário expondo tanto as permissões gravadas quanto as efetivas.
+
+    ``permissoes`` é o que está salvo (personalização por módulo) e
+    ``permissoesEfetivas`` é o que o backend realmente aplica, já considerando
+    os presets dos papéis e o acesso irrestrito do papel ``master``.
+    """
+    papeis = user.papeis or []
+    permissoes = user.permissoes or []
+    return {
+        "uid": str(user.id),
+        "email": user.email,
+        "nome": user.nome,
+        "papeis": papeis,
+        "permissoes": permissoes,
+        "permissoesEfetivas": sorted(resolve_permissions(papeis, permissoes)),
+        "empresasIds": [str(user.empresa_id)] if user.empresa_id else [],
+        "ativo": user.ativo,
+    }
 
 def validate_password_strength(senha: str) -> bool:
     if len(senha) < 8:
@@ -35,12 +58,13 @@ def authenticate_user(email: str, senha: str, db: Session) -> Optional[Usuario]:
     return user
 
 def create_user(
-    email: str, 
-    senha: str, 
-    nome: str, 
-    papeis: List[str], 
+    email: str,
+    senha: str,
+    nome: str,
+    papeis: List[str],
     empresas_ids: List[str],
-    db: Session
+    db: Session,
+    permissoes: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """Cria um novo usuário no banco PostgreSQL."""
     email_clean = email.lower().strip()
@@ -55,12 +79,18 @@ def create_user(
         except ValueError:
             pass
 
+    try:
+        permissoes_validas = validar_permissoes(permissoes)
+    except ValueError as exc:
+        raise ValidationError(str(exc))
+
     hashed = hash_password(senha)
     new_user = Usuario(
         nome=nome.strip(),
         email=email_clean,
         senha_hash=hashed,
         papeis=papeis,
+        permissoes=permissoes_validas,
         empresa_id=empresa_id,
         ativo=True
     )
@@ -68,14 +98,7 @@ def create_user(
     db.commit()
     db.refresh(new_user)
 
-    return {
-        "uid": str(new_user.id),
-        "email": new_user.email,
-        "nome": new_user.nome,
-        "papeis": new_user.papeis or [],
-        "empresasIds": [str(new_user.empresa_id)] if new_user.empresa_id else [],
-        "ativo": new_user.ativo
-    }
+    return serialize_user(new_user)
 
 def update_user(
     uid: str,
@@ -83,7 +106,8 @@ def update_user(
     papeis: Optional[List[str]],
     empresas_ids: Optional[List[str]],
     ativo: Optional[bool],
-    db: Session
+    db: Session,
+    permissoes: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """Atualiza os dados de um usuário no PostgreSQL."""
     user = db.query(Usuario).filter(Usuario.id == uid).first()
@@ -94,6 +118,11 @@ def update_user(
         user.nome = nome.strip()
     if papeis is not None:
         user.papeis = papeis
+    if permissoes is not None:
+        try:
+            user.permissoes = validar_permissoes(permissoes)
+        except ValueError as exc:
+            raise ValidationError(str(exc))
     if empresas_ids is not None and empresas_ids:
         user.empresa_id = uuid.UUID(str(empresas_ids[0]))
     if ativo is not None:
@@ -102,28 +131,14 @@ def update_user(
     db.commit()
     db.refresh(user)
 
-    return {
-        "uid": str(user.id),
-        "email": user.email,
-        "nome": user.nome,
-        "papeis": user.papeis or [],
-        "empresasIds": [str(user.empresa_id)] if user.empresa_id else [],
-        "ativo": user.ativo
-    }
+    return serialize_user(user)
 
 def get_user_by_uid(uid: str, db: Session) -> Dict[str, Any]:
     """Busca usuário por ID."""
     user = db.query(Usuario).filter(Usuario.id == uid).first()
     if not user:
         raise NotFoundError(f"Usuário {uid} não encontrado.")
-    return {
-        "uid": str(user.id),
-        "email": user.email,
-        "nome": user.nome,
-        "papeis": user.papeis or [],
-        "empresasIds": [str(user.empresa_id)] if user.empresa_id else [],
-        "ativo": user.ativo
-    }
+    return serialize_user(user)
 
 def list_users_by_company(empresas_ids: List[str], db: Session) -> List[Dict[str, Any]]:
     """Lista usuários pertencentes às empresas informadas."""
@@ -132,14 +147,4 @@ def list_users_by_company(empresas_ids: List[str], db: Session) -> List[Dict[str
         uuids = [uuid.UUID(str(eid)) for eid in empresas_ids if eid]
         query = query.filter(Usuario.empresa_id.in_(uuids))
     users = query.all()
-    return [
-        {
-            "uid": str(u.id),
-            "email": u.email,
-            "nome": u.nome,
-            "papeis": u.papeis or [],
-            "empresasIds": [str(u.empresa_id)] if u.empresa_id else [],
-            "ativo": u.ativo
-        }
-        for u in users
-    ]
+    return [serialize_user(u) for u in users]
